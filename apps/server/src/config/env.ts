@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 const envSchema = z.object({
+  ADMIN_EMAIL: z.string().email().default("admin@travelverse.local"),
+  ADMIN_NAME: z.string().min(1).default("TravelVerse Admin"),
+  ADMIN_PASSWORD: z.string().min(8).default("Admin@12345"),
   CLIENT_URL: z.string().url().default("http://localhost:3000"),
   MONGODB_DB_NAME: z.string().min(1).default("travelverse"),
   MONGODB_URI: z

@@ -18,6 +18,7 @@
     "@nestjs/mongoose": "latest",
     "@nestjs/platform-express": "latest",
     "@travelverse/contracts": "workspace:*",
+    "bcryptjs": "latest",
     "class-transformer": "latest",
     "class-validator": "latest",
     "helmet": "latest",

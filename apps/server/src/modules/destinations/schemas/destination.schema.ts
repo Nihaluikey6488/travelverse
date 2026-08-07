@@ -1,5 +1,12 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
+import type {
+  Attraction,
+  DestinationSection,
+  MediaAsset,
+  PublishStatus,
+} from "@travelverse/contracts";
+import type { SourceAttribution } from "@travelverse/contracts";
 
 export type DestinationMongoDocument = HydratedDocument<DestinationDocument>;
 
@@ -44,6 +51,87 @@ export class DestinationDocument {
   @Prop({ default: [], type: [String] })
   culturalHighlights!: string[];
 
+  @Prop({ default: [], type: [String] })
+  foodHighlights!: string[];
+
+  @Prop({ default: [], type: [String] })
+  danceAndArts!: string[];
+
+  @Prop({ default: [], type: [String] })
+  festivals!: string[];
+
+  @Prop({
+    default: [],
+    type: [
+      {
+        _id: false,
+        averageVisitMinutes: Number,
+        coordinates: {
+          lat: Number,
+          lng: Number,
+        },
+        estimatedCostInr: Number,
+        name: String,
+        summary: String,
+        tags: [String],
+      },
+    ],
+  })
+  attractions!: Attraction[];
+
+  @Prop({
+    default: [],
+    type: [
+      {
+        _id: false,
+        body: String,
+        kind: {
+          enum: ["history", "culture", "food", "dance", "festival", "travelTip"],
+          type: String,
+        },
+        sourceUrl: String,
+        title: String,
+      },
+    ],
+  })
+  sections!: DestinationSection[];
+
+  @Prop({
+    default: [],
+    type: [
+      {
+        _id: false,
+        alt: String,
+        credit: String,
+        license: String,
+        type: {
+          enum: ["image", "video", "model"],
+          type: String,
+        },
+        url: String,
+      },
+    ],
+  })
+  media!: MediaAsset[];
+
+  @Prop({
+    default: [],
+    type: [
+      {
+        _id: false,
+        fetchedAt: Date,
+        license: String,
+        provider: String,
+        sourceUrl: String,
+        verificationStatus: {
+          enum: ["UNVERIFIED", "VERIFIED", "REJECTED"],
+          type: String,
+        },
+      },
+    ],
+  })
+  sources!: Array<Omit<SourceAttribution, "fetchedAt"> & { fetchedAt: Date }>;
+
   @Prop({ required: true })
   estimatedDailyBudgetInr!: number;
 
@@ -54,7 +142,7 @@ export class DestinationDocument {
   tags!: string[];
 
   @Prop({ default: "DRAFT", enum: ["DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"], index: true })
-  status!: "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED";
+  status!: PublishStatus;
 }
 
 export const DestinationSchema = SchemaFactory.createForClass(DestinationDocument);

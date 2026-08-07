@@ -37,6 +37,12 @@ Local services for the database layer:
 docker compose up -d mongodb redis
 ```
 
+Seed MongoDB with one admin user, three showcase destinations and starter hotel estimates:
+
+```bash
+pnpm.cmd db:seed
+```
+
 ## Initial Local URLs
 
 - Client: `http://localhost:3000`
@@ -49,6 +55,18 @@ docker compose up -d mongodb redis
 - Frontend: `next`, `react`, `react-dom`, `@react-three/fiber`, `@react-three/drei`, `three`, `maplibre-gl`, `framer-motion`, `lucide-react`, `@tanstack/react-query`, `zustand`
 - Backend: `@nestjs/core`, `@nestjs/common`, `@nestjs/platform-express`, `@nestjs/config`, `@nestjs/mongoose`, `mongoose`, `helmet`, `zod`
 - Tooling: `pnpm`, `turbo`, `typescript`, `eslint`, `prettier`, `vitest`, `tailwindcss`
+
+## Day 2 Database Foundation
+
+MongoDB collections are modeled with Mongoose schemas in `apps/server/src/modules/*/schemas`.
+
+- `users` - normal users and admins
+- `destinations` - published/draft travel content, cultural sections, attractions, media and source attribution
+- `hotels` - hotel and room estimates for MVP booking simulation
+- `itineraries` - user trip plans
+- `bookings` - simulated booking records
+- `reviews` - destination reviews
+- `favourites` - saved destinations per user
 
 ## Data Flow
 

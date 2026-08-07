@@ -7,12 +7,12 @@ export class DestinationsController {
   constructor(private readonly destinationsService: DestinationsService) {}
 
   @Get()
-  findAll(): Destination[] {
+  findAll(): Promise<Destination[]> {
     return this.destinationsService.findAll();
   }
 
   @Get(":slug")
-  findBySlug(@Param("slug") slug: string): Destination {
+  findBySlug(@Param("slug") slug: string): Promise<Destination> {
     return this.destinationsService.findBySlug(slug);
   }
 }
