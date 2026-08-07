@@ -9,7 +9,7 @@ export type UserMongoDocument = HydratedDocument<UserDocument>;
   timestamps: true,
 })
 export class UserDocument {
-  @Prop({ index: true, lowercase: true, required: true, trim: true, unique: true })
+  @Prop({ lowercase: true, required: true, trim: true })
   email!: string;
 
   @Prop({ required: true, select: false })
