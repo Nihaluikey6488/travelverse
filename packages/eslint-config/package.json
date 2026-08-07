@@ -1,0 +1,21 @@
+{
+  "name": "@travelverse/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./browser": "./browser.mjs",
+    "./node": "./node.mjs"
+  },
+  "dependencies": {
+    "@eslint/js": "latest",
+    "eslint-config-prettier": "latest",
+    "globals": "latest",
+    "typescript-eslint": "latest"
+  },
+  "peerDependencies": {
+    "eslint": ">=9.0.0",
+    "typescript": ">=5.0.0 <6.1.0"
+  }
+}

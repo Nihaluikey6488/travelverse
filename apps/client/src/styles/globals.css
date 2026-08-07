@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg: #10100f;
+  --panel: rgba(22, 22, 20, 0.76);
+  --panel-strong: rgba(26, 28, 25, 0.94);
+  --line: rgba(255, 255, 255, 0.14);
+  --text: #fff8eb;
+  --muted: #c8c0ad;
+  --green: #18c59f;
+  --gold: #f2c45a;
+  --coral: #ff7d66;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.experience-shell {
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.globe-stage {
+  inset: 0;
+  position: fixed;
+}
+
+.globe-stage canvas {
+  min-height: 100vh;
+}
+
+.scene-loading {
+  background: #10100f;
+  min-height: 100vh;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 780px;
+  min-height: 100vh;
+  padding: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-row {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.brand-mark {
+  align-items: center;
+  background: var(--green);
+  color: #09221c;
+  display: inline-flex;
+  font-weight: 900;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.top-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: flex-end;
+}
+
+.top-nav a {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.hero-copy {
+  margin-top: auto;
+  max-width: 720px;
+}
+
+.eyebrow,
+.region-line {
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.6rem, 8vw, 5.8rem);
+  line-height: 0.94;
+  letter-spacing: 0;
+  margin: 0;
+  max-width: 760px;
+}
+
+.search-bar {
+  align-items: center;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  max-width: 650px;
+  padding: 14px 16px;
+}
+
+.search-bar input {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  min-width: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.search-bar input::placeholder {
+  color: rgba(255, 248, 235, 0.58);
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.action-row button {
+  align-items: center;
+  background: rgba(255, 248, 235, 0.08);
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.destination-focus {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.8fr);
+  max-width: 780px;
+  padding: 18px;
+}
+
+.destination-focus h2 {
+  font-size: 1.6rem;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+
+.destination-focus p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.stat-grid {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.stat-grid div {
+  border-left: 3px solid var(--coral);
+  padding-left: 12px;
+}
+
+.stat-grid dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+
+.stat-grid dd {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.destination-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: 28px;
+}
+
+.destination-card {
+  background: rgba(255, 248, 235, 0.08);
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  min-height: 112px;
+  padding: 14px;
+  text-align: left;
+}
+
+.destination-card.active {
+  border-color: var(--green);
+}
+
+.destination-card span {
+  align-items: center;
+  display: flex;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.destination-card small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 840px) {
+  .workspace {
+    max-width: none;
+    padding: 20px;
+  }
+
+  .brand-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero-copy {
+    margin-top: 18vh;
+  }
+
+  .destination-focus {
+    grid-template-columns: 1fr;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "@travelverse/server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seed.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "latest",
+    "@nestjs/config": "latest",
+    "@nestjs/core": "latest",
+    "@nestjs/mongoose": "latest",
+    "@nestjs/platform-express": "latest",
+    "@travelverse/contracts": "workspace:*",
+    "class-transformer": "latest",
+    "class-validator": "latest",
+    "helmet": "latest",
+    "mongoose": "latest",
+    "reflect-metadata": "latest",
+    "rxjs": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "latest",
+    "@nestjs/schematics": "latest",
+    "@nestjs/testing": "latest",
+    "@travelverse/eslint-config": "workspace:*",
+    "@travelverse/typescript-config": "workspace:*",
+    "@types/node": "latest",
+    "@types/supertest": "latest",
+    "eslint": "latest",
+    "supertest": "latest",
+    "ts-node": "latest",
+    "tsconfig-paths": "latest",
+    "typescript": "5.9.3",
+    "vitest": "latest"
+  }
+}

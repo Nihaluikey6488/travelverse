@@ -1,0 +1,30 @@
+{
+  "name": "@travelverse/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@travelverse/eslint-config": "workspace:*",
+    "@travelverse/typescript-config": "workspace:*",
+    "@types/node": "latest",
+    "eslint": "latest",
+    "typescript": "5.9.3",
+    "vitest": "latest"
+  }
+}
