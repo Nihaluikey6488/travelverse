@@ -25,6 +25,7 @@
     "class-transformer": "latest",
     "class-validator": "latest",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
     "helmet": "latest",
     "mongoose": "latest",
     "passport": "^0.7.0",
