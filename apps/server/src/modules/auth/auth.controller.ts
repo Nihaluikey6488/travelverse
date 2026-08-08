@@ -10,12 +10,14 @@ import {
   type RegisterRequest,
 } from "@travelverse/contracts";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
-import { AUTH_COOKIE_NAME, getAuthCookieOptions } from "./auth.constants";
+import { AUTH_COOKIE_NAME, getAuthCookieOptions, isGoogleOAuthConfigured } from "./auth.constants";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { Roles } from "./decorators/roles.decorator";
 import { AuthGuard } from "./guards/auth.guard";
+import { GoogleOAuthGuard } from "./guards/google-oauth.guard";
 import { RolesGuard } from "./guards/roles.guard";
+import { env } from "../../config/env";
 
 @Controller("auth")
 export class AuthController {
@@ -56,6 +58,27 @@ export class AuthController {
     return {
       message: "Logged out successfully",
     };
+  }
+
+  @Get("google/status")
+  googleStatus() {
+    return {
+      enabled: isGoogleOAuthConfigured(),
+      loginUrl: "/api/auth/google",
+    };
+  }
+
+  @Get("google")
+  @UseGuards(GoogleOAuthGuard)
+  googleAuth() {
+    return undefined;
+  }
+
+  @Get("google/callback")
+  @UseGuards(GoogleOAuthGuard)
+  googleCallback(@CurrentUser() user: AuthUser, @Res() response: Response) {
+    this.setSessionCookie(response, user);
+    return response.redirect(env.OAUTH_SUCCESS_REDIRECT_URL);
   }
 
   @Get("me")
