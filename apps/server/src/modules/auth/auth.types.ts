@@ -7,6 +7,13 @@ export interface JwtPayload {
   sub: string;
 }
 
+export interface GoogleProfilePayload {
+  avatarUrl?: string;
+  email: string;
+  googleId: string;
+  name: string;
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: AuthUser;
 }

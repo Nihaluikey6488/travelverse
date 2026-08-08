@@ -135,6 +135,7 @@ async function seedAdmin() {
     {
       $set: {
         email: env.ADMIN_EMAIL,
+        authProvider: "credentials",
         isActive: true,
         name: env.ADMIN_NAME,
         passwordHash,

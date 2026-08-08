@@ -101,6 +101,12 @@ Auth is implemented with MongoDB users, bcrypt password hashes and an HttpOnly J
 - `POST /api/auth/logout` - clear the session cookie
 - `GET /api/auth/me` - return the current authenticated user
 - `GET /api/auth/admin-check` - verify the current user has the `ADMIN` role
+- `GET /api/auth/google` - start Google OAuth login
+- `GET /api/auth/google/callback` - complete Google OAuth and set the session cookie
+- `GET /api/auth/google/status` - check whether Google OAuth environment keys are configured
+
+Public discovery routes stay open. Users only need authentication for personal or protected
+features such as account, saved trips, favourites, booking simulation and admin controls.
 
 Seeded local admin credentials:
 
@@ -115,3 +121,12 @@ Frontend auth routes:
 - `/register`
 - `/account`
 - `/admin`
+
+To enable Google login locally, create OAuth credentials in Google Cloud Console and use this
+authorized redirect URI:
+
+```text
+http://localhost:4000/api/auth/google/callback
+```
+
+Then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.

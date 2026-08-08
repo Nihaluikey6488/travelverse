@@ -4,7 +4,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { compare, hash } from "bcryptjs";
 import { Model, Types } from "mongoose";
 import type { AuthResponse, AuthUser, LoginRequest, RegisterRequest } from "@travelverse/contracts";
-import type { JwtPayload } from "./auth.types";
+import type { GoogleProfilePayload, JwtPayload } from "./auth.types";
 import { JWT_EXPIRES_IN_SECONDS } from "./auth.constants";
 import { UserDocument, type UserMongoDocument } from "../users/schemas/user.schema";
 
@@ -25,6 +25,7 @@ export class AuthService {
 
     const passwordHash = await hash(payload.password, 12);
     const user = await this.userModel.create({
+      authProvider: "credentials",
       email: payload.email,
       name: payload.name,
       passwordHash,
@@ -37,7 +38,7 @@ export class AuthService {
   async login(payload: LoginRequest): Promise<AuthResponse> {
     const user = await this.userModel.findOne({ email: payload.email }).select("+passwordHash");
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !user.passwordHash) {
       throw new UnauthorizedException("Invalid email or password");
     }
 
@@ -51,6 +52,39 @@ export class AuthService {
     await user.save();
 
     return this.toAuthResponse(user);
+  }
+
+  async loginWithGoogle(profile: GoogleProfilePayload): Promise<AuthResponse> {
+    const user = await this.userModel.findOne({
+      $or: [{ googleId: profile.googleId }, { email: profile.email }],
+    });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new UnauthorizedException("User is no longer active");
+      }
+
+      user.authProvider = user.authProvider ?? "google";
+      user.avatarUrl = profile.avatarUrl ?? user.avatarUrl;
+      user.googleId = profile.googleId;
+      user.lastLoginAt = new Date();
+      user.name = user.name || profile.name;
+      await user.save();
+
+      return this.toAuthResponse(user);
+    }
+
+    const createdUser = await this.userModel.create({
+      authProvider: "google",
+      avatarUrl: profile.avatarUrl,
+      email: profile.email,
+      googleId: profile.googleId,
+      isActive: true,
+      name: profile.name,
+      role: "USER",
+    });
+
+    return this.toAuthResponse(createdUser);
   }
 
   async findAuthenticatedUser(userId: string): Promise<AuthUser> {
@@ -86,11 +120,17 @@ export class AuthService {
   }
 
   private toAuthUser(user: UserMongoDocument): AuthUser {
-    return {
+    const authUser: AuthUser = {
       email: user.email,
       id: user._id.toString(),
       name: user.name,
       role: user.role,
     };
+
+    if (user.avatarUrl) {
+      authUser.avatarUrl = user.avatarUrl;
+    }
+
+    return authUser;
   }
 }

@@ -15,6 +15,7 @@ function makeUser(overrides: Partial<UserMongoDocument> = {}) {
       toString: () => userId,
     },
     email: "traveller@example.com",
+    authProvider: "credentials",
     isActive: true,
     name: "Test Traveller",
     passwordHash: "",
@@ -97,5 +98,58 @@ describe("AuthService", () => {
         expiresIn: 604800,
       },
     );
+  });
+
+  it("creates a user from a Google profile", async () => {
+    const createdUser = makeUser({
+      authProvider: "google",
+      avatarUrl: "https://example.com/avatar.png",
+      googleId: "google-user-1",
+    });
+    const create = vi.fn().mockResolvedValue(createdUser);
+    const service = makeService({
+      create,
+      findOne: vi.fn().mockResolvedValue(null),
+    });
+
+    const response = await service.loginWithGoogle({
+      avatarUrl: "https://example.com/avatar.png",
+      email: "traveller@example.com",
+      googleId: "google-user-1",
+      name: "Test Traveller",
+    });
+
+    expect(create).toHaveBeenCalledWith({
+      authProvider: "google",
+      avatarUrl: "https://example.com/avatar.png",
+      email: "traveller@example.com",
+      googleId: "google-user-1",
+      isActive: true,
+      name: "Test Traveller",
+      role: "USER",
+    });
+    expect(response.user.avatarUrl).toBe("https://example.com/avatar.png");
+  });
+
+  it("links a Google profile to an existing email account", async () => {
+    const existingUser = makeUser({
+      authProvider: "credentials",
+      passwordHash: await hash("Password123", 12),
+    });
+    const service = makeService({
+      findOne: vi.fn().mockResolvedValue(existingUser),
+    });
+
+    const response = await service.loginWithGoogle({
+      avatarUrl: "https://example.com/avatar.png",
+      email: "traveller@example.com",
+      googleId: "google-user-1",
+      name: "Test Traveller",
+    });
+
+    expect(existingUser.googleId).toBe("google-user-1");
+    expect(existingUser.avatarUrl).toBe("https://example.com/avatar.png");
+    expect(existingUser.save).toHaveBeenCalledOnce();
+    expect(response.user.email).toBe("traveller@example.com");
   });
 });

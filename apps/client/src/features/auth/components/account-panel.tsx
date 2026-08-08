@@ -52,8 +52,8 @@ export function AccountPanel() {
               <ShieldCheck className="mx-auto h-12 w-12 text-orange-300" />
               <h1 className="text-3xl font-black">Login required</h1>
               <p className="mx-auto max-w-xl text-slate-300">
-                Account page protected API se user data fetch karta hai. Login karo, phir saved
-                routes and future bookings yahin show honge.
+                Explore page public hai, but account, saved routes, bookings aur personal trip
+                planning ke liye login required hai.
               </p>
               <Link
                 className="inline-flex rounded-2xl bg-teal-300 px-5 py-3 text-sm font-bold text-slate-950"

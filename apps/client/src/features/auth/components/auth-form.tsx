@@ -10,6 +10,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
 } from "@travelverse/contracts";
+import { apiBaseUrl } from "@/lib/api";
 import { login, register } from "./auth-api";
 
 type AuthMode = "login" | "register";
@@ -23,6 +24,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isRegisterMode = mode === "register";
+  const googleLoginUrl = `${apiBaseUrl}/auth/google`;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,8 +87,8 @@ export function AuthForm({ mode }: AuthFormProps) {
                 {isRegisterMode ? "Create your traveller account." : "Welcome back, explorer."}
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                Save routes, plan trips, unlock admin controls later, and keep your discovery
-                session secure with HttpOnly cookie auth.
+                Explore freely without login. Sign in only when you want to save routes, plan
+                trips, book stays, or access admin controls.
               </p>
             </div>
 
@@ -168,6 +170,22 @@ export function AuthForm({ mode }: AuthFormProps) {
                   {error}
                 </p>
               ) : null}
+
+              <a
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm font-bold text-white transition hover:border-teal-300/60 hover:bg-white/10"
+                href={googleLoginUrl}
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-black text-slate-950">
+                  G
+                </span>
+                Continue with Google
+              </a>
+
+              <div className="flex items-center gap-3 text-xs uppercase tracking-[0.22em] text-slate-500">
+                <span className="h-px flex-1 bg-white/10" />
+                or
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
 
               <button
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-300 to-orange-300 px-5 py-4 text-sm font-black uppercase tracking-[0.22em] text-slate-950 shadow-lg shadow-teal-950/40 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"

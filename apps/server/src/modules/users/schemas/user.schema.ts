@@ -12,8 +12,8 @@ export class UserDocument {
   @Prop({ lowercase: true, required: true, trim: true })
   email!: string;
 
-  @Prop({ required: true, select: false })
-  passwordHash!: string;
+  @Prop({ select: false })
+  passwordHash?: string;
 
   @Prop({ required: true, trim: true })
   name!: string;
@@ -23,6 +23,15 @@ export class UserDocument {
 
   @Prop({ default: true, index: true })
   isActive!: boolean;
+
+  @Prop({ default: "credentials", enum: ["credentials", "google"], type: String })
+  authProvider!: "credentials" | "google";
+
+  @Prop({ index: true, sparse: true, trim: true, unique: true })
+  googleId?: string;
+
+  @Prop({ trim: true })
+  avatarUrl?: string;
 
   @Prop()
   lastLoginAt?: Date;

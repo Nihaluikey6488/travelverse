@@ -13,6 +13,7 @@ export const loginRequestSchema = z.object({
 });
 
 export const authUserSchema = z.object({
+  avatarUrl: z.string().url().optional(),
   id: mongoIdSchema,
   email: z.string().email(),
   name: z.string(),
