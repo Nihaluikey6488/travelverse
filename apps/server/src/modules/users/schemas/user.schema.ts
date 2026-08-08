@@ -18,7 +18,7 @@ export class UserDocument {
   @Prop({ required: true, trim: true })
   name!: string;
 
-  @Prop({ default: "USER", enum: ["USER", "ADMIN"], index: true })
+  @Prop({ default: "USER", enum: ["USER", "ADMIN"], index: true, type: String })
   role!: UserRole;
 
   @Prop({ default: true, index: true })

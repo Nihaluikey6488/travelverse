@@ -5,6 +5,7 @@ const envSchema = z.object({
   ADMIN_NAME: z.string().min(1).default("TravelVerse Admin"),
   ADMIN_PASSWORD: z.string().min(8).default("Admin@12345"),
   CLIENT_URL: z.string().url().default("http://localhost:3000"),
+  JWT_SECRET: z.string().min(16).default("dev-travelverse-secret-change-before-production"),
   MONGODB_DB_NAME: z.string().min(1).default("travelverse"),
   MONGODB_URI: z
     .string()
