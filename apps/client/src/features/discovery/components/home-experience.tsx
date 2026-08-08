@@ -61,6 +61,8 @@ export function HomeExperience() {
             <Link href="/trip-planner">Planner</Link>
             <Link href="/transport">Routes</Link>
             <Link href="/hotels">Hotels</Link>
+            <Link href="/login">Login</Link>
+            <Link href="/account">Account</Link>
           </nav>
         </div>
 

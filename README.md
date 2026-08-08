@@ -49,11 +49,14 @@ pnpm.cmd db:seed
 - Server: `http://localhost:4000/api`
 - Health check: `http://localhost:4000/api/health`
 - Sample destination API: `http://localhost:4000/api/destinations`
+- Login page: `http://localhost:3000/login`
+- Account page: `http://localhost:3000/account`
+- Admin gate: `http://localhost:3000/admin`
 
 ## Main Packages
 
 - Frontend: `next`, `react`, `react-dom`, `@react-three/fiber`, `@react-three/drei`, `three`, `maplibre-gl`, `framer-motion`, `lucide-react`, `@tanstack/react-query`, `zustand`
-- Backend: `@nestjs/core`, `@nestjs/common`, `@nestjs/platform-express`, `@nestjs/config`, `@nestjs/mongoose`, `mongoose`, `helmet`, `zod`
+- Backend: `@nestjs/core`, `@nestjs/common`, `@nestjs/platform-express`, `@nestjs/config`, `@nestjs/mongoose`, `@nestjs/jwt`, `@nestjs/throttler`, `mongoose`, `cookie-parser`, `helmet`, `zod`
 - Tooling: `pnpm`, `turbo`, `typescript`, `eslint`, `prettier`, `vitest`, `tailwindcss`
 
 ## Day 2 Database Foundation
@@ -88,3 +91,27 @@ MongoDB collections are modeled with Mongoose schemas in `apps/server/src/module
 - Railway and bus estimates or authorized APIs
 
 The `chatbot` modules are intentionally reserved for a later phase and should answer from verified application data.
+
+## Day 3 Authentication Foundation
+
+Auth is implemented with MongoDB users, bcrypt password hashes and an HttpOnly JWT cookie.
+
+- `POST /api/auth/register` - create a normal user and set the session cookie
+- `POST /api/auth/login` - validate credentials and set the session cookie
+- `POST /api/auth/logout` - clear the session cookie
+- `GET /api/auth/me` - return the current authenticated user
+- `GET /api/auth/admin-check` - verify the current user has the `ADMIN` role
+
+Seeded local admin credentials:
+
+```text
+Email: admin@travelverse.local
+Password: Admin@12345
+```
+
+Frontend auth routes:
+
+- `/login`
+- `/register`
+- `/account`
+- `/admin`
