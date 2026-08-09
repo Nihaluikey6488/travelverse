@@ -21,5 +21,6 @@ const googleOAuthProviders = isGoogleOAuthConfigured() ? [GoogleStrategy] : [];
     }),
   ],
   providers: [AuthService, ...googleOAuthProviders],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
