@@ -141,7 +141,12 @@ export class DestinationDocument {
   @Prop({ default: [], index: true, type: [String] })
   tags!: string[];
 
-  @Prop({ default: "DRAFT", enum: ["DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"], index: true })
+  @Prop({
+    default: "DRAFT",
+    enum: ["DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"],
+    index: true,
+    type: String,
+  })
   status!: PublishStatus;
 }
 

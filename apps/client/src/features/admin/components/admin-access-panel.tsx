@@ -72,6 +72,12 @@ export function AdminAccessPanel() {
                 </div>
               ))}
             </div>
+            <Link
+              className="inline-flex rounded-2xl bg-teal-300 px-5 py-3 text-sm font-bold text-slate-950"
+              href="/admin/destinations"
+            >
+              Open destination editor
+            </Link>
           </div>
         ) : null}
       </section>

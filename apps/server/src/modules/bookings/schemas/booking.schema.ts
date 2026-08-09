@@ -27,7 +27,12 @@ export class BookingDocument {
   @Prop({ min: 1, required: true })
   guests!: number;
 
-  @Prop({ default: "PENDING", enum: ["PENDING", "CONFIRMED", "CANCELLED"], index: true })
+  @Prop({
+    default: "PENDING",
+    enum: ["PENDING", "CONFIRMED", "CANCELLED"],
+    index: true,
+    type: String,
+  })
   status!: BookingStatus;
 
   @Prop({ default: 0, min: 0 })

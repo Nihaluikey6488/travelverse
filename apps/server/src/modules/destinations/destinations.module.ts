@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { AdminDestinationsController } from "./admin-destinations.controller";
 import { DestinationsController } from "./destinations.controller";
 import { DestinationsService } from "./destinations.service";
 import { DestinationDocument, DestinationSchema } from "./schemas/destination.schema";
@@ -13,7 +14,7 @@ import { DestinationDocument, DestinationSchema } from "./schemas/destination.sc
       },
     ]),
   ],
-  controllers: [DestinationsController],
+  controllers: [AdminDestinationsController, DestinationsController],
   providers: [DestinationsService],
 })
 export class DestinationsModule {}
