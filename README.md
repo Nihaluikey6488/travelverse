@@ -52,6 +52,7 @@ pnpm.cmd db:seed
 - Login page: `http://localhost:3000/login`
 - Account page: `http://localhost:3000/account`
 - Admin gate: `http://localhost:3000/admin`
+- Admin destination editor: `http://localhost:3000/admin/destinations`
 
 ## Main Packages
 
@@ -130,3 +131,25 @@ http://localhost:4000/api/auth/google/callback
 ```
 
 Then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+
+## Day 4 Destination Content Management
+
+Destination discovery now supports a public read flow and a protected admin content workflow.
+
+Public APIs:
+
+- `GET /api/destinations` - paginated destination list; returns only `PUBLISHED` content
+- `GET /api/destinations/:slug` - public destination detail; returns only `PUBLISHED` content
+
+Admin-only APIs:
+
+- `GET /api/admin/destinations` - list drafts, review items, published and archived destinations
+- `POST /api/admin/destinations` - create a destination draft
+- `GET /api/admin/destinations/:slug` - fetch one destination for editing
+- `PATCH /api/admin/destinations/:slug` - update destination story, media, attractions and metadata
+- `POST /api/admin/destinations/:slug/publish` - publish a destination
+- `POST /api/admin/destinations/:slug/archive` - archive a destination
+
+Frontend admin route:
+
+- `/admin/destinations` - destination list, editor, draft preview and publish/archive controls

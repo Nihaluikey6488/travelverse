@@ -1,4 +1,24 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
+
+const envFilePaths = [
+  resolve(__dirname, "../../.env"),
+  resolve(process.cwd(), ".env"),
+  resolve(process.cwd(), "../../.env"),
+  resolve(__dirname, "../../../../.env"),
+];
+
+for (const envFilePath of [...new Set(envFilePaths)]) {
+  if (existsSync(envFilePath)) {
+    loadDotenv({
+      override: false,
+      path: envFilePath,
+      quiet: true,
+    });
+  }
+}
 
 const envSchema = z.object({
   ADMIN_EMAIL: z.string().email().default("admin@travelverse.local"),

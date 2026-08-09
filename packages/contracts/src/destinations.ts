@@ -3,6 +3,7 @@ import {
   coordinatesSchema,
   mongoIdSchema,
   paginationQuerySchema,
+  paginatedResponseSchema,
   publishStatusSchema,
   slugSchema,
   verificationStatusSchema,
@@ -79,6 +80,10 @@ export const upsertDestinationRequestSchema = destinationSchema
     status: true,
   });
 
+export const updateDestinationRequestSchema = upsertDestinationRequestSchema.partial();
+
+export const destinationListResponseSchema = paginatedResponseSchema(destinationSchema);
+
 export type SourceAttribution = z.infer<typeof sourceAttributionSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type DestinationSection = z.infer<typeof destinationSectionSchema>;
@@ -86,6 +91,8 @@ export type Attraction = z.infer<typeof attractionSchema>;
 export type Destination = z.infer<typeof destinationSchema>;
 export type DestinationListQuery = z.infer<typeof destinationListQuerySchema>;
 export type UpsertDestinationRequest = z.infer<typeof upsertDestinationRequestSchema>;
+export type UpdateDestinationRequest = z.infer<typeof updateDestinationRequestSchema>;
+export type DestinationListResponse = z.infer<typeof destinationListResponseSchema>;
 
 const demoSource: SourceAttribution = {
   provider: "manual-demo",
