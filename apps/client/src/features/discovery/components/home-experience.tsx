@@ -3,11 +3,12 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Compass, Hotel, MapPinned, Plane, Route, Search, Sparkles } from "lucide-react";
+import { ArrowUpRight, Compass, Hotel, Plane, Route, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { sampleDestinations } from "@travelverse/contracts";
 import type { Destination } from "@travelverse/contracts";
 import type { TravelGlobeProps } from "@/components/three/travel-globe";
+import { DestinationPostcard } from "./destination-postcard";
 
 const TravelGlobe = dynamic<TravelGlobeProps>(
   () => import("@/components/three/travel-globe").then((mod) => mod.TravelGlobe),
@@ -164,43 +165,39 @@ export function HomeExperience() {
           {selectedDestination ? <DestinationConsole destination={selectedDestination} /> : null}
         </div>
 
-        <section className="relative z-10 grid gap-3 pb-4 md:grid-cols-3" aria-label="Featured destinations">
-          {destinations.map((destination, index) => (
-            <motion.button
-              animate={{ opacity: 1, y: 0 }}
-              className={`group relative min-h-40 overflow-hidden rounded-[2rem] border p-4 text-left shadow-2xl backdrop-blur-xl transition duration-300 hover:-translate-y-2 ${
-                destination.slug === selectedSlug
-                  ? "border-teal-200/70 bg-teal-200/15 shadow-teal-950/50"
-                  : "border-white/10 bg-white/[0.06] shadow-black/30 hover:border-white/25 hover:bg-white/[0.09]"
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              key={destination.id}
-              onClick={() => selectDestination(destination.slug)}
-              transition={{ delay: 0.09 * index, duration: 0.55, ease: "easeOut" }}
-              type="button"
-            >
-              <div
-                className="absolute inset-0 opacity-30 transition duration-500 group-hover:scale-110 group-hover:opacity-45"
-                style={{
-                  backgroundImage: `linear-gradient(180deg, rgba(3,7,18,0.2), rgba(3,7,18,0.86)), url(${destination.heroImageUrl})`,
-                  backgroundPosition: "center",
-                  backgroundSize: "cover",
-                }}
-              />
-              <div className="relative flex h-full flex-col justify-between gap-8">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-teal-100">
-                  <MapPinned className="h-3.5 w-3.5" />
-                  {destination.region}
-                </span>
-                <div>
-                  <h2 className="text-2xl font-black tracking-[-0.04em]">{destination.name}</h2>
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">
-                    {destination.tagline}
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-          ))}
+        <section className="relative z-10 pb-5" aria-label="Featured destination postcards">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.26em] text-teal-200">
+                Floating postcards
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
+                Pick a city by feeling, not just by name.
+              </h2>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-slate-400">
+              Hover cards for depth, shine and travel stats. Click any postcard to lock the
+              destination signal on the globe.
+            </p>
+          </div>
+
+          {destinations.length > 0 ? (
+            <div className="grid gap-5 [perspective:1600px] md:grid-cols-3">
+              {destinations.map((destination, index) => (
+                <DestinationPostcard
+                  destination={destination}
+                  index={index}
+                  isSelected={destination.slug === selectedSlug}
+                  key={destination.id}
+                  onSelect={selectDestination}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 text-center text-slate-300 backdrop-blur-xl">
+              No postcards match this search yet.
+            </div>
+          )}
         </section>
       </section>
     </main>
