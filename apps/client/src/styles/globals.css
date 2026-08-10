@@ -42,6 +42,22 @@ input {
   font: inherit;
 }
 
+.award-grain::after {
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px),
+    radial-gradient(circle at 72% 42%, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px);
+  background-size:
+    18px 18px,
+    26px 26px;
+  content: "";
+  inset: 0;
+  mix-blend-mode: soft-light;
+  opacity: 0.18;
+  pointer-events: none;
+  position: fixed;
+  z-index: 5;
+}
+
 .experience-shell {
   min-height: 100vh;
   overflow: hidden;

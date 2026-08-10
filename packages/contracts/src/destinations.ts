@@ -84,6 +84,47 @@ export const updateDestinationRequestSchema = upsertDestinationRequestSchema.par
 
 export const destinationListResponseSchema = paginatedResponseSchema(destinationSchema);
 
+export const destinationImportSearchQuerySchema = z.object({
+  query: z.string().trim().min(2),
+  limit: z.coerce.number().int().positive().max(10).default(5),
+});
+
+export const destinationImportCandidateSchema = z.object({
+  externalId: z.string().min(1),
+  provider: z.string().min(1),
+  name: z.string().min(1),
+  displayName: z.string().min(1),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  coordinates: coordinatesSchema,
+  category: z.string().optional(),
+  importance: z.number().optional(),
+  sourceUrl: z.string().url(),
+  wikipediaTitle: z.string().optional(),
+  wikidataId: z.string().optional(),
+});
+
+export const destinationImportSearchResponseSchema = z.object({
+  data: z.array(destinationImportCandidateSchema),
+  warnings: z.array(z.string()),
+});
+
+export const destinationImportRequestSchema = z.object({
+  candidate: destinationImportCandidateSchema,
+});
+
+export const destinationImportPreviewSchema = z.object({
+  candidate: destinationImportCandidateSchema,
+  draft: upsertDestinationRequestSchema,
+  importedFields: z.array(z.string()),
+  sources: z.array(sourceAttributionSchema),
+  warnings: z.array(z.string()),
+});
+
+export const destinationImportResultSchema = destinationImportPreviewSchema.extend({
+  destination: destinationSchema,
+});
+
 export type SourceAttribution = z.infer<typeof sourceAttributionSchema>;
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type DestinationSection = z.infer<typeof destinationSectionSchema>;
@@ -93,6 +134,12 @@ export type DestinationListQuery = z.infer<typeof destinationListQuerySchema>;
 export type UpsertDestinationRequest = z.infer<typeof upsertDestinationRequestSchema>;
 export type UpdateDestinationRequest = z.infer<typeof updateDestinationRequestSchema>;
 export type DestinationListResponse = z.infer<typeof destinationListResponseSchema>;
+export type DestinationImportSearchQuery = z.infer<typeof destinationImportSearchQuerySchema>;
+export type DestinationImportCandidate = z.infer<typeof destinationImportCandidateSchema>;
+export type DestinationImportSearchResponse = z.infer<typeof destinationImportSearchResponseSchema>;
+export type DestinationImportRequest = z.infer<typeof destinationImportRequestSchema>;
+export type DestinationImportPreview = z.infer<typeof destinationImportPreviewSchema>;
+export type DestinationImportResult = z.infer<typeof destinationImportResultSchema>;
 
 const demoSource: SourceAttribution = {
   provider: "manual-demo",

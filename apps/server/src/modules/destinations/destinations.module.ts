@@ -4,6 +4,11 @@ import { AuthModule } from "../auth/auth.module";
 import { AdminDestinationsController } from "./admin-destinations.controller";
 import { DestinationsController } from "./destinations.controller";
 import { DestinationsService } from "./destinations.service";
+import { DestinationImportService } from "./import/destination-import.service";
+import { ExternalHttpService } from "./import/external-http.service";
+import { NominatimGeocodingProvider } from "./import/nominatim-geocoding.provider";
+import { ProviderCacheService } from "./import/provider-cache.service";
+import { WikimediaKnowledgeProvider } from "./import/wikimedia-knowledge.provider";
 import { DestinationDocument, DestinationSchema } from "./schemas/destination.schema";
 
 @Module({
@@ -17,6 +22,13 @@ import { DestinationDocument, DestinationSchema } from "./schemas/destination.sc
     ]),
   ],
   controllers: [AdminDestinationsController, DestinationsController],
-  providers: [DestinationsService],
+  providers: [
+    DestinationImportService,
+    DestinationsService,
+    ExternalHttpService,
+    NominatimGeocodingProvider,
+    ProviderCacheService,
+    WikimediaKnowledgeProvider,
+  ],
 })
 export class DestinationsModule {}
