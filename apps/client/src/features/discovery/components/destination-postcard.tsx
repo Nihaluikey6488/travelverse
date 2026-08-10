@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Clock3, IndianRupee, MapPinned, Navigation2, Utensils } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
 import type { Destination } from "@travelverse/contracts";
+import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 
 type DestinationPostcardProps = {
   destination: Destination;
@@ -108,7 +110,7 @@ export function DestinationPostcard({
         <div className="relative flex min-h-[26rem] flex-col justify-between p-5 [transform-style:preserve-3d]">
           <div className="flex items-start justify-between gap-4 [transform:translateZ(58px)]">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.2em] text-teal-100 backdrop-blur-md">
-              <MapPinned className="h-3.5 w-3.5" />
+              <HydrationSafeIcon className="h-3.5 w-3.5" icon={MapPinned} />
               {destination.region}
             </span>
             <span className="grid h-14 w-14 rotate-6 place-items-center rounded-2xl border border-amber-100/40 bg-amber-100/15 text-center text-[0.62rem] font-black uppercase leading-3 tracking-[0.16em] text-amber-100 backdrop-blur-md [transform:translateZ(78px)]">
@@ -160,14 +162,14 @@ function PostcardStat({
   label,
   value,
 }: {
-  icon: typeof Utensils;
+  icon: LucideIcon;
   label: string;
   value: string;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/35 p-3 backdrop-blur-md">
       <div className="flex items-center gap-2 text-[0.64rem] font-black uppercase tracking-[0.18em] text-slate-400">
-        <Icon className="h-3.5 w-3.5 text-teal-200" />
+        <HydrationSafeIcon className="h-3.5 w-3.5 text-teal-200" icon={Icon} />
         {label}
       </div>
       <p className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-white">{value}</p>

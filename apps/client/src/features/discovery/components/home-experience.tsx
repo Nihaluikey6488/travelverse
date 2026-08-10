@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { sampleDestinations } from "@travelverse/contracts";
 import type { Destination } from "@travelverse/contracts";
 import type { TravelGlobeProps } from "@/components/three/travel-globe";
+import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 import { DestinationPostcard } from "./destination-postcard";
 
 const TravelGlobe = dynamic<TravelGlobeProps>(
@@ -121,7 +122,7 @@ export function HomeExperience() {
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-200/20 bg-teal-200/10 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-teal-100">
-              <Sparkles className="h-4 w-4" />
+              <HydrationSafeIcon className="h-4 w-4" icon={Sparkles} />
               Cinematic destination atlas
             </p>
             <h1 className="max-w-5xl text-[clamp(3.2rem,10vw,8.8rem)] font-black leading-[0.82] tracking-[-0.09em] text-white">
@@ -137,7 +138,11 @@ export function HomeExperience() {
 
             <div className="mt-8 max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.08] p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
               <label className="flex items-center gap-3 rounded-[1.55rem] bg-slate-950/70 px-4 py-3">
-                <Search className="h-5 w-5 text-teal-200" aria-hidden="true" />
+                <HydrationSafeIcon
+                  aria-hidden="true"
+                  className="h-5 w-5 text-teal-200"
+                  icon={Search}
+                />
                 <input
                   className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500 sm:text-base"
                   value={query}
@@ -155,7 +160,10 @@ export function HomeExperience() {
                   key={label}
                   type="button"
                 >
-                  <Icon className="h-4 w-4 text-amber-200 transition group-hover:text-teal-200" />
+                  <HydrationSafeIcon
+                    className="h-4 w-4 text-amber-200 transition group-hover:text-teal-200"
+                    icon={Icon}
+                  />
                   {label}
                 </button>
               ))}
@@ -227,7 +235,7 @@ function DestinationConsole({ destination }: { destination: Destination }) {
           href="/explore"
           aria-label={`Explore ${destination.name}`}
         >
-          <ArrowUpRight className="h-5 w-5" />
+          <HydrationSafeIcon className="h-5 w-5" icon={ArrowUpRight} />
         </Link>
       </div>
 
