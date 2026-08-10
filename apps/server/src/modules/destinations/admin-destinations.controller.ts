@@ -1,9 +1,16 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import {
+  destinationImportRequestSchema,
+  destinationImportSearchQuerySchema,
   destinationListQuerySchema,
   updateDestinationRequestSchema,
   upsertDestinationRequestSchema,
   type Destination,
+  type DestinationImportPreview,
+  type DestinationImportRequest,
+  type DestinationImportResult,
+  type DestinationImportSearchQuery,
+  type DestinationImportSearchResponse,
   type DestinationListQuery,
   type DestinationListResponse,
   type UpdateDestinationRequest,
@@ -14,12 +21,16 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { DestinationsService } from "./destinations.service";
+import { DestinationImportService } from "./import/destination-import.service";
 
 @Controller("admin/destinations")
 @UseGuards(AuthGuard, RolesGuard)
 @Roles("ADMIN")
 export class AdminDestinationsController {
-  constructor(private readonly destinationsService: DestinationsService) {}
+  constructor(
+    private readonly destinationsService: DestinationsService,
+    private readonly destinationImportService: DestinationImportService,
+  ) {}
 
   @Get()
   findAll(
@@ -33,6 +44,28 @@ export class AdminDestinationsController {
     @Body(new ZodValidationPipe(upsertDestinationRequestSchema)) payload: UpsertDestinationRequest,
   ): Promise<Destination> {
     return this.destinationsService.create(payload);
+  }
+
+  @Get("import/search")
+  searchImportCandidates(
+    @Query(new ZodValidationPipe(destinationImportSearchQuerySchema))
+    query: DestinationImportSearchQuery,
+  ): Promise<DestinationImportSearchResponse> {
+    return this.destinationImportService.search(query);
+  }
+
+  @Post("import/preview")
+  previewImport(
+    @Body(new ZodValidationPipe(destinationImportRequestSchema)) payload: DestinationImportRequest,
+  ): Promise<DestinationImportPreview> {
+    return this.destinationImportService.preview(payload);
+  }
+
+  @Post("import")
+  importDraft(
+    @Body(new ZodValidationPipe(destinationImportRequestSchema)) payload: DestinationImportRequest,
+  ): Promise<DestinationImportResult> {
+    return this.destinationImportService.importDraft(payload);
   }
 
   @Get(":slug")
