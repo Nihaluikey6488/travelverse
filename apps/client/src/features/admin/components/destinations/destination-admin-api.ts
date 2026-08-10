@@ -1,5 +1,9 @@
 import type {
   Destination,
+  DestinationImportCandidate,
+  DestinationImportPreview,
+  DestinationImportResult,
+  DestinationImportSearchResponse,
   DestinationListResponse,
   UpdateDestinationRequest,
   UpsertDestinationRequest,
@@ -41,6 +45,33 @@ export function publishDestination(slug: string) {
 
 export function archiveDestination(slug: string) {
   return apiRequest<Destination>(`/admin/destinations/${slug}/archive`, {
+    method: "POST",
+  });
+}
+
+export function searchImportCandidates(query: string) {
+  const search = new URLSearchParams({
+    limit: "5",
+    query,
+  });
+
+  return apiGet<DestinationImportSearchResponse>(`/admin/destinations/import/search?${search}`);
+}
+
+export function previewDestinationImport(candidate: DestinationImportCandidate) {
+  return apiRequest<DestinationImportPreview>("/admin/destinations/import/preview", {
+    body: {
+      candidate,
+    },
+    method: "POST",
+  });
+}
+
+export function importDestinationDraft(candidate: DestinationImportCandidate) {
+  return apiRequest<DestinationImportResult>("/admin/destinations/import", {
+    body: {
+      candidate,
+    },
     method: "POST",
   });
 }

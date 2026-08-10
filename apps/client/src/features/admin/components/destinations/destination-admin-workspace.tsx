@@ -25,6 +25,7 @@ import {
   publishDestination,
   updateDestination,
 } from "./destination-admin-api";
+import { DestinationImportPanel } from "./destination-import-panel";
 
 type FormState = {
   attractionsJson: string;
@@ -210,6 +211,8 @@ export function DestinationAdminWorkspace() {
             {error}
           </p>
         ) : null}
+
+        <DestinationImportPanel onImported={loadDestinations} />
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">

@@ -153,3 +153,39 @@ Admin-only APIs:
 Frontend admin route:
 
 - `/admin/destinations` - destination list, editor, draft preview and publish/archive controls
+
+## Day 5 External Data Import Pipeline
+
+Admins can import destination drafts from external provider data without publishing automatically.
+
+Admin import APIs:
+
+- `GET /api/admin/destinations/import/search?query=udaipur&limit=5` - search provider matches
+- `POST /api/admin/destinations/import/preview` - enrich a selected match and preview the normalized draft
+- `POST /api/admin/destinations/import` - save the selected match as a `DRAFT` destination
+
+Frontend admin workflow:
+
+- Open `/admin/destinations`
+- Use the "Import destination from net" panel
+- Search a place, select a provider match, review imported fields/sources and save as draft
+
+Provider defaults:
+
+- Geocoding: OpenStreetMap Nominatim
+- Knowledge/media: Wikimedia/Wikipedia summary and thumbnail
+- Caching: in-memory provider response cache
+- Safety: provider failures return warnings instead of crashing the app
+
+Useful optional environment variables:
+
+```text
+INGESTION_USER_AGENT=TravelVerse3D/0.1 (local demo; admin@travelverse.local)
+INGESTION_FETCH_TIMEOUT_MS=6000
+INGESTION_CACHE_TTL_SECONDS=21600
+NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
+WIKIPEDIA_API_BASE_URL=https://en.wikipedia.org
+```
+
+When using public Nominatim, keep requests user-triggered, cached and identified with a custom
+User-Agent.
