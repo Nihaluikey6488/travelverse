@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { DestinationsModule } from "./modules/destinations/destinations.module";
+import { FavouritesModule } from "./modules/favourites/favourites.module";
 import { HealthModule } from "./modules/health/health.module";
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthModule } from "./modules/health/health.module";
     HealthModule,
     AuthModule,
     DestinationsModule,
+    FavouritesModule,
   ],
   providers: [
     {

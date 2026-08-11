@@ -66,6 +66,8 @@ export const destinationSchema = z.object({
 });
 
 export const destinationListQuerySchema = paginationQuerySchema.extend({
+  activity: z.string().trim().min(1).optional(),
+  category: z.string().trim().min(1).optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   tag: z.string().optional(),
@@ -83,6 +85,23 @@ export const upsertDestinationRequestSchema = destinationSchema
 export const updateDestinationRequestSchema = upsertDestinationRequestSchema.partial();
 
 export const destinationListResponseSchema = paginatedResponseSchema(destinationSchema);
+
+export const destinationFacetResponseSchema = z.object({
+  activities: z.array(z.string()),
+  categories: z.array(z.string()),
+  countries: z.array(z.string()),
+  regions: z.array(z.string()),
+  tags: z.array(z.string()),
+});
+
+export const favouriteListResponseSchema = z.object({
+  destinationSlugs: z.array(slugSchema),
+});
+
+export const favouriteMutationResponseSchema = favouriteListResponseSchema.extend({
+  destinationSlug: slugSchema,
+  isFavourite: z.boolean(),
+});
 
 export const destinationImportSearchQuerySchema = z.object({
   query: z.string().trim().min(2),
@@ -131,9 +150,12 @@ export type DestinationSection = z.infer<typeof destinationSectionSchema>;
 export type Attraction = z.infer<typeof attractionSchema>;
 export type Destination = z.infer<typeof destinationSchema>;
 export type DestinationListQuery = z.infer<typeof destinationListQuerySchema>;
+export type DestinationFacetResponse = z.infer<typeof destinationFacetResponseSchema>;
 export type UpsertDestinationRequest = z.infer<typeof upsertDestinationRequestSchema>;
 export type UpdateDestinationRequest = z.infer<typeof updateDestinationRequestSchema>;
 export type DestinationListResponse = z.infer<typeof destinationListResponseSchema>;
+export type FavouriteListResponse = z.infer<typeof favouriteListResponseSchema>;
+export type FavouriteMutationResponse = z.infer<typeof favouriteMutationResponseSchema>;
 export type DestinationImportSearchQuery = z.infer<typeof destinationImportSearchQuerySchema>;
 export type DestinationImportCandidate = z.infer<typeof destinationImportCandidateSchema>;
 export type DestinationImportSearchResponse = z.infer<typeof destinationImportSearchResponseSchema>;

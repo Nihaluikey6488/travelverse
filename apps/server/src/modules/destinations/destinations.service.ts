@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import type {
   Destination,
+  DestinationFacetResponse,
   DestinationListQuery,
   DestinationListResponse,
   UpdateDestinationRequest,
@@ -33,6 +34,28 @@ export class DestinationsService {
       ...query,
       status: "PUBLISHED",
     });
+  }
+
+  async findPublishedFacets(): Promise<DestinationFacetResponse> {
+    const publishedFilter = {
+      status: "PUBLISHED" as const,
+    };
+
+    const [regions, countries, tags, sectionKinds, attractionTags] = await Promise.all([
+      this.destinationModel.distinct("region", publishedFilter).exec(),
+      this.destinationModel.distinct("country", publishedFilter).exec(),
+      this.destinationModel.distinct("tags", publishedFilter).exec(),
+      this.destinationModel.distinct("sections.kind", publishedFilter).exec(),
+      this.destinationModel.distinct("attractions.tags", publishedFilter).exec(),
+    ]);
+
+    return {
+      activities: this.toSortedStrings([...attractionTags, ...tags]),
+      categories: this.toSortedStrings([...sectionKinds, ...tags]),
+      countries: this.toSortedStrings(countries),
+      regions: this.toSortedStrings(regions),
+      tags: this.toSortedStrings(tags),
+    };
   }
 
   async findForAdmin(query: DestinationListQuery): Promise<DestinationListResponse> {
@@ -169,6 +192,7 @@ export class DestinationsService {
 
   private buildFilter(query: DestinationListQuery): DestinationFilter {
     const filter: DestinationFilter = {};
+    const andFilters: DestinationFilter[] = [];
 
     if (query.status) {
       filter.status = query.status;
@@ -186,13 +210,63 @@ export class DestinationsService {
       filter.tags = query.tag;
     }
 
+    const categoryFilters = this.buildKeywordFilters(query.category);
+
+    if (categoryFilters.length > 0) {
+      andFilters.push({
+        $or: categoryFilters,
+      });
+    }
+
+    const activityFilters = this.buildKeywordFilters(query.activity);
+
+    if (activityFilters.length > 0) {
+      andFilters.push({
+        $or: activityFilters,
+      });
+    }
+
     if (query.search) {
       filter.$text = {
         $search: query.search,
       };
     }
 
+    if (andFilters.length > 0) {
+      filter.$and = andFilters;
+    }
+
     return filter;
+  }
+
+  private buildKeywordFilters(value?: string): DestinationFilter[] {
+    if (!value) {
+      return [];
+    }
+
+    return [
+      {
+        tags: value,
+      },
+      {
+        "sections.kind": value,
+      },
+      {
+        "attractions.tags": value,
+      },
+      {
+        culturalHighlights: value,
+      },
+      {
+        foodHighlights: value,
+      },
+      {
+        danceAndArts: value,
+      },
+      {
+        festivals: value,
+      },
+    ];
   }
 
   private applySort(
@@ -256,5 +330,11 @@ export class DestinationsService {
       tagline: destination.tagline,
       tags: destination.tags ?? [],
     };
+  }
+
+  private toSortedStrings(values: unknown[]): string[] {
+    return [...new Set(values.filter((value): value is string => typeof value === "string"))].sort(
+      (first, second) => first.localeCompare(second),
+    );
   }
 }
