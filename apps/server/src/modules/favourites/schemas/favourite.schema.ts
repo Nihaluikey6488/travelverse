@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Schema as MongooseSchema } from "mongoose";
+import { HydratedDocument, Schema as MongooseSchema, Types } from "mongoose";
 
 export type FavouriteMongoDocument = HydratedDocument<FavouriteDocument>;
 
@@ -9,7 +9,7 @@ export type FavouriteMongoDocument = HydratedDocument<FavouriteDocument>;
 })
 export class FavouriteDocument {
   @Prop({ index: true, ref: "UserDocument", required: true, type: MongooseSchema.Types.ObjectId })
-  userId!: MongooseSchema.Types.ObjectId;
+  userId!: Types.ObjectId;
 
   @Prop({ index: true, required: true })
   destinationSlug!: string;

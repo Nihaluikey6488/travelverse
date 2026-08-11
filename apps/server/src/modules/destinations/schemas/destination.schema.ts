@@ -153,9 +153,19 @@ export class DestinationDocument {
 export const DestinationSchema = SchemaFactory.createForClass(DestinationDocument);
 
 DestinationSchema.index({
+  "attractions.name": "text",
+  "attractions.summary": "text",
+  "attractions.tags": "text",
   name: "text",
   region: "text",
   country: "text",
   tags: "text",
   culturalHighlights: "text",
+  danceAndArts: "text",
+  festivals: "text",
+  foodHighlights: "text",
 });
+
+DestinationSchema.index({ status: 1, slug: 1 });
+DestinationSchema.index({ status: 1, name: 1 });
+DestinationSchema.index({ status: 1, region: 1, tags: 1 });

@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import {
+  type DestinationFacetResponse,
   destinationListQuerySchema,
   type Destination,
   type DestinationListQuery,
@@ -17,6 +18,11 @@ export class DestinationsController {
     @Query(new ZodValidationPipe(destinationListQuerySchema)) query: DestinationListQuery,
   ): Promise<DestinationListResponse> {
     return this.destinationsService.findPublished(query);
+  }
+
+  @Get("facets")
+  findFacets(): Promise<DestinationFacetResponse> {
+    return this.destinationsService.findPublishedFacets();
   }
 
   @Get(":slug")

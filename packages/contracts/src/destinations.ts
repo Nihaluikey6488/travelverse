@@ -66,6 +66,8 @@ export const destinationSchema = z.object({
 });
 
 export const destinationListQuerySchema = paginationQuerySchema.extend({
+  activity: z.string().trim().min(1).optional(),
+  category: z.string().trim().min(1).optional(),
   country: z.string().optional(),
   region: z.string().optional(),
   tag: z.string().optional(),
@@ -83,6 +85,23 @@ export const upsertDestinationRequestSchema = destinationSchema
 export const updateDestinationRequestSchema = upsertDestinationRequestSchema.partial();
 
 export const destinationListResponseSchema = paginatedResponseSchema(destinationSchema);
+
+export const destinationFacetResponseSchema = z.object({
+  activities: z.array(z.string()),
+  categories: z.array(z.string()),
+  countries: z.array(z.string()),
+  regions: z.array(z.string()),
+  tags: z.array(z.string()),
+});
+
+export const favouriteListResponseSchema = z.object({
+  destinationSlugs: z.array(slugSchema),
+});
+
+export const favouriteMutationResponseSchema = favouriteListResponseSchema.extend({
+  destinationSlug: slugSchema,
+  isFavourite: z.boolean(),
+});
 
 export const destinationImportSearchQuerySchema = z.object({
   query: z.string().trim().min(2),
@@ -131,9 +150,12 @@ export type DestinationSection = z.infer<typeof destinationSectionSchema>;
 export type Attraction = z.infer<typeof attractionSchema>;
 export type Destination = z.infer<typeof destinationSchema>;
 export type DestinationListQuery = z.infer<typeof destinationListQuerySchema>;
+export type DestinationFacetResponse = z.infer<typeof destinationFacetResponseSchema>;
 export type UpsertDestinationRequest = z.infer<typeof upsertDestinationRequestSchema>;
 export type UpdateDestinationRequest = z.infer<typeof updateDestinationRequestSchema>;
 export type DestinationListResponse = z.infer<typeof destinationListResponseSchema>;
+export type FavouriteListResponse = z.infer<typeof favouriteListResponseSchema>;
+export type FavouriteMutationResponse = z.infer<typeof favouriteMutationResponseSchema>;
 export type DestinationImportSearchQuery = z.infer<typeof destinationImportSearchQuerySchema>;
 export type DestinationImportCandidate = z.infer<typeof destinationImportCandidateSchema>;
 export type DestinationImportSearchResponse = z.infer<typeof destinationImportSearchResponseSchema>;
@@ -200,12 +222,47 @@ export const sampleDestinations: Destination[] = [
         body: "Jaipur connects royal planning, fort architecture, craft markets and food culture in a compact travel route.",
       },
       {
+        title: "Royal craft culture",
+        kind: "culture",
+        body: "The city is known for planned pink facades, palace courtyards, block printing, blue pottery and market streets that still feel active rather than museum-like.",
+      },
+      {
         title: "Local taste",
         kind: "food",
         body: "A first trip should include dal baati churma, pyaaz kachori and a sweet stop for ghewar.",
       },
+      {
+        title: "Ghoomar and handmade rhythm",
+        kind: "dance",
+        body: "Ghoomar performances, puppet storytelling and textile work give Jaipur a strong evening culture beyond monuments.",
+      },
+      {
+        title: "Festival windows",
+        kind: "festival",
+        body: "Teej, Gangaur and the Jaipur Literature Festival create high-energy seasonal reasons to plan the trip around specific dates.",
+      },
+      {
+        title: "Practical route advice",
+        kind: "travelTip",
+        body: "Start Amber Fort early, keep Hawa Mahal and City Palace for the old-city walking block, and leave evening buffer for traffic near markets.",
+      },
     ],
-    media: [],
+    media: [
+      {
+        alt: "Amber fort walls and Jaipur hill route",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80",
+      },
+      {
+        alt: "Pink architecture and old city facade in Jaipur",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1200&q=80",
+      },
+    ],
     sources: [demoSource],
     estimatedDailyBudgetInr: 2800,
     bestSeason: "October to March",
@@ -257,17 +314,52 @@ export const sampleDestinations: Destination[] = [
     ],
     sections: [
       {
+        title: "Ancient river city",
+        kind: "history",
+        body: "Varanasi is one of India’s oldest living urban cultures, where temple lanes, ghats and river rituals shape the travel experience.",
+      },
+      {
         title: "Old city rhythm",
         kind: "culture",
         body: "The best Varanasi experience mixes ghats, narrow lanes, food stops and slow morning walks by the river.",
+      },
+      {
+        title: "Street breakfast trail",
+        kind: "food",
+        body: "Kachori sabzi, lassi, paan and winter malaiyo are strong food anchors for a route that starts early and moves on foot.",
       },
       {
         title: "Music and craft",
         kind: "dance",
         body: "Classical music, thumri and Banarasi weaving give the city a strong cultural identity beyond sightseeing.",
       },
+      {
+        title: "Dev Deepawali glow",
+        kind: "festival",
+        body: "Dev Deepawali and Ganga Mahotsav turn the riverfront into a special visual experience, but also require early hotel and route planning.",
+      },
+      {
+        title: "Practical route advice",
+        kind: "travelTip",
+        body: "Use walking routes around the ghats, keep Sarnath as a half-day side trip, and plan sunrise boat rides before heat and crowd build up.",
+      },
     ],
-    media: [],
+    media: [
+      {
+        alt: "Varanasi ghats at sunrise",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1627894483216-2138af692e32?auto=format&fit=crop&w=1200&q=80",
+      },
+      {
+        alt: "Boats on the Ganga river in Varanasi",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1571536802807-30451e3955d8?auto=format&fit=crop&w=1200&q=80",
+      },
+    ],
     sources: [demoSource],
     estimatedDailyBudgetInr: 2200,
     bestSeason: "November to February",
@@ -319,6 +411,11 @@ export const sampleDestinations: Destination[] = [
     ],
     sections: [
       {
+        title: "Layered coastal history",
+        kind: "history",
+        body: "Goa’s churches, forts, village lanes and Portuguese-era architecture make it more than a beach stop.",
+      },
+      {
         title: "Beyond beaches",
         kind: "culture",
         body: "Goa works best when beaches are combined with heritage streets, village food and local festival routes.",
@@ -328,8 +425,38 @@ export const sampleDestinations: Destination[] = [
         kind: "food",
         body: "Seafood, bakery stops and local sweets make cost planning and itinerary building very practical here.",
       },
+      {
+        title: "Fugdi and coastal performance",
+        kind: "dance",
+        body: "Fugdi, Dekhni and village festival performances add local movement and music to an otherwise beach-heavy itinerary.",
+      },
+      {
+        title: "Carnival and monsoon mood",
+        kind: "festival",
+        body: "Carnival, Sao Joao and Shigmo change the mood of the trip, while monsoon months suit slower heritage and cafe routes.",
+      },
+      {
+        title: "Practical route advice",
+        kind: "travelTip",
+        body: "Split North Goa beach activity from Old Goa and Fontainhas heritage walks; bike rentals help, but late-night routes need safety planning.",
+      },
     ],
-    media: [],
+    media: [
+      {
+        alt: "Goa coastline with palms and beach route",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+      },
+      {
+        alt: "Goa heritage street and colourful houses",
+        credit: "Unsplash",
+        license: "Unsplash license",
+        type: "image",
+        url: "https://images.unsplash.com/photo-1558960214-f4283a743867?auto=format&fit=crop&w=1200&q=80",
+      },
+    ],
     sources: [demoSource],
     estimatedDailyBudgetInr: 3500,
     bestSeason: "November to February",
