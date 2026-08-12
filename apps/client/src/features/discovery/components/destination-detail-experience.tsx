@@ -27,6 +27,7 @@ import {
   listFavourites,
   removeFavourite,
 } from "./destination-api";
+import { RoutePlanner } from "./route-planner";
 
 const sectionLabels: Record<DestinationSection["kind"], string> = {
   culture: "Culture",
@@ -280,6 +281,12 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
                 ))}
               </div>
             </Panel>
+
+            <RoutePlanner
+              attractions={destination.attractions}
+              destination={destination.coordinates}
+              destinationName={destination.name}
+            />
 
             {[...sectionGroups.entries()].map(([kind, sections]) => (
               <Panel key={kind} title={sectionLabels[kind]}>
