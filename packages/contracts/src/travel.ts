@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { bookingStatusSchema, mongoIdSchema, slugSchema, transportModeSchema } from "./common";
+import {
+  bookingStatusSchema,
+  coordinatesSchema,
+  mongoIdSchema,
+  slugSchema,
+  transportModeSchema,
+} from "./common";
 
 export const transportEstimateSchema = z.object({
   mode: transportModeSchema,
@@ -10,6 +16,28 @@ export const transportEstimateSchema = z.object({
   estimatedCostInr: z.number().int().nonnegative(),
   source: z.string(),
   isLivePrice: z.boolean(),
+});
+
+export const routeTravelModeSchema = z.enum(["car", "bike", "walk"]);
+
+export const routeEstimateRequestSchema = z.object({
+  destination: coordinatesSchema,
+  mode: routeTravelModeSchema.default("car"),
+  origin: coordinatesSchema,
+});
+
+export const routeEstimateResponseSchema = z.object({
+  cacheHit: z.boolean(),
+  destination: coordinatesSchema,
+  distanceKm: z.number().nonnegative(),
+  durationMinutes: z.number().int().nonnegative(),
+  fetchedAt: z.string().datetime(),
+  geometry: z.array(coordinatesSchema).min(2),
+  mode: routeTravelModeSchema,
+  origin: coordinatesSchema,
+  provider: z.string(),
+  source: z.enum(["LIVE_PROVIDER", "ESTIMATED_FALLBACK"]),
+  warnings: z.array(z.string()),
 });
 
 export const roomSchema = z.object({
@@ -78,6 +106,9 @@ export const favouriteSchema = z.object({
 });
 
 export type TransportEstimate = z.infer<typeof transportEstimateSchema>;
+export type RouteTravelMode = z.infer<typeof routeTravelModeSchema>;
+export type RouteEstimateRequest = z.infer<typeof routeEstimateRequestSchema>;
+export type RouteEstimateResponse = z.infer<typeof routeEstimateResponseSchema>;
 export type Room = z.infer<typeof roomSchema>;
 export type Hotel = z.infer<typeof hotelSchema>;
 export type ItineraryStop = z.infer<typeof itineraryStopSchema>;
