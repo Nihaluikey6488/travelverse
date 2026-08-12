@@ -5,6 +5,8 @@ import type {
   DestinationListResponse,
   FavouriteListResponse,
   FavouriteMutationResponse,
+  RouteEstimateRequest,
+  RouteEstimateResponse,
 } from "@travelverse/contracts";
 import { apiGet, apiRequest } from "@/lib/api";
 
@@ -33,6 +35,13 @@ export function addFavourite(destinationSlug: string) {
 export function removeFavourite(destinationSlug: string) {
   return apiRequest<FavouriteMutationResponse>(`/favourites/${destinationSlug}`, {
     method: "DELETE",
+  });
+}
+
+export function estimateRoute(payload: RouteEstimateRequest) {
+  return apiRequest<RouteEstimateResponse>("/routes/estimate", {
+    body: payload,
+    method: "POST",
   });
 }
 

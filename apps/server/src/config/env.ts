@@ -47,7 +47,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   OAUTH_FAILURE_REDIRECT_URL: z.string().url().default("http://localhost:3000/login?oauth=failed"),
   OAUTH_SUCCESS_REDIRECT_URL: z.string().url().default("http://localhost:3000/account"),
+  OSRM_BASE_URL: z.string().url().default("https://router.project-osrm.org"),
   PORT: z.coerce.number().int().positive().default(4000),
+  ROUTING_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  ROUTING_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(7000),
   WIKIPEDIA_API_BASE_URL: z.string().url().default("https://en.wikipedia.org"),
 });
 
