@@ -53,6 +53,8 @@ pnpm.cmd db:seed
 - Account page: `http://localhost:3000/account`
 - Admin gate: `http://localhost:3000/admin`
 - Admin destination editor: `http://localhost:3000/admin/destinations`
+- Explore page: `http://localhost:3000/explore`
+- Destination story: `http://localhost:3000/destinations/jaipur`
 
 ## Main Packages
 
@@ -189,3 +191,57 @@ WIKIPEDIA_API_BASE_URL=https://en.wikipedia.org
 
 When using public Nominatim, keep requests user-triggered, cached and identified with a custom
 User-Agent.
+
+## Day 6 Public Discovery
+
+Users can browse published destinations without login and only authenticate for personal actions
+such as favourites.
+
+Public discovery APIs:
+
+- `GET /api/destinations` - search/filter/paginate published destinations
+- `GET /api/destinations/facets` - region, category, activity and tag filter values
+- `GET /api/destinations/:slug` - rich public destination detail
+
+Authenticated favourites APIs:
+
+- `GET /api/favourites`
+- `POST /api/favourites/:slug`
+- `DELETE /api/favourites/:slug`
+
+Frontend routes:
+
+- `/explore` - API-driven search, filters, skeletons, empty states and pagination
+- `/destinations/[slug]` - history, culture, food, dance, festivals, attractions, gallery,
+  practical advice and source trust
+
+## Day 7 Maps, Geolocation and Routing
+
+Destination detail pages now include a route planner. Users can choose an origin from presets,
+enter manual latitude/longitude or request browser geolocation. If location permission is denied,
+manual origin input still works.
+
+Routing APIs:
+
+- `POST /api/routes/estimate` - accepts origin, destination and travel mode, returns normalized
+  distance in kilometres, duration in minutes and route geometry
+
+Routing provider defaults:
+
+- Provider: OSRM Route API
+- Geometry format: GeoJSON
+- Cache: in-memory route cache with configurable TTL
+- Fallback: estimated direct route if the live provider is unavailable
+- Safety: provider credentials/config stay on the server; the frontend calls only the TravelVerse API
+
+Useful routing environment variables:
+
+```text
+OSRM_BASE_URL=https://router.project-osrm.org
+ROUTING_FETCH_TIMEOUT_MS=7000
+ROUTING_CACHE_TTL_SECONDS=900
+```
+
+Provider docs used:
+
+- OSRM Route service: https://project-osrm.org/docs/v5.24.0/api/
