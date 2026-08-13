@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight, Compass, Hotel, Plane, Route, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { sampleDestinations } from "@travelverse/contracts";
@@ -10,16 +10,14 @@ import type { Destination } from "@travelverse/contracts";
 import type { TravelGlobeProps } from "@/components/three/travel-globe";
 import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 import { DestinationPostcard } from "./destination-postcard";
+import { GlobeFallback } from "./globe-fallback";
+import { useScenePreferences } from "./use-scene-preferences";
 
 const TravelGlobe = dynamic<TravelGlobeProps>(
   () => import("@/components/three/travel-globe").then((mod) => mod.TravelGlobe),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="h-28 w-28 animate-ping rounded-full border border-teal-200/40" />
-      </div>
-    ),
+    loading: () => <GlobeLoadingShell label="Loading WebGL atlas" />,
   },
 );
 
@@ -33,6 +31,12 @@ const featurePills = [
 export function HomeExperience() {
   const [query, setQuery] = useState("");
   const [selectedSlug, setSelectedSlug] = useState(sampleDestinations[0]?.slug ?? "");
+  const [isThreeSceneEnabled, setIsThreeSceneEnabled] = useState(false);
+  const scenePreferences = useScenePreferences();
+  const { scrollYProgress } = useScroll();
+  const globeOpacity = useTransform(scrollYProgress, [0, 0.55, 1], [1, 0.78, 0.52]);
+  const globeScale = useTransform(scrollYProgress, [0, 0.65], [1, 0.92]);
+  const canUseThreeScene = scenePreferences.hasHydrated && !scenePreferences.shouldUseFallback;
 
   const destinations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -72,13 +76,35 @@ export function HomeExperience() {
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_72%_32%,rgba(45,255,209,0.22),transparent_30%),radial-gradient(circle_at_30%_78%,rgba(255,125,102,0.18),transparent_28%),linear-gradient(110deg,rgba(3,7,18,0.2),rgba(3,7,18,0.88)_52%,#030712)]" />
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:78px_78px] opacity-20" />
 
-      <section className="fixed inset-y-0 right-0 w-full lg:w-[62vw]" aria-label="Interactive travel globe">
-        <TravelGlobe
-          destinations={sampleDestinations}
-          onSelectDestination={selectDestination}
-          selectedSlug={selectedSlug}
-        />
-      </section>
+      <motion.section
+        aria-label="Interactive travel globe"
+        className="pointer-events-none fixed inset-y-0 right-0 w-full lg:pointer-events-auto lg:w-[62vw]"
+        style={{ opacity: globeOpacity, scale: globeScale }}
+      >
+        {!scenePreferences.hasHydrated ? (
+          <GlobeLoadingShell label="Preparing visual mode" />
+        ) : scenePreferences.shouldUseFallback || !isThreeSceneEnabled ? (
+          <GlobeFallback
+            destinations={sampleDestinations}
+            onSelectDestination={selectDestination}
+            reason={
+              scenePreferences.shouldUseFallback
+                ? scenePreferences.fallbackReason
+                : "3D Earth paused for smooth loading"
+            }
+            reduceMotion={scenePreferences.prefersReducedMotion}
+            selectedSlug={selectedSlug}
+          />
+        ) : (
+          <TravelGlobe
+            destinations={sampleDestinations}
+            onSelectDestination={selectDestination}
+            quality={scenePreferences.quality}
+            reducedMotion={scenePreferences.prefersReducedMotion}
+            selectedSlug={selectedSlug}
+          />
+        )}
+      </motion.section>
 
       <section className="relative z-10 flex min-h-screen flex-col px-5 py-5 sm:px-8 lg:px-10">
         <header className="flex items-center justify-between gap-4">
@@ -132,8 +158,8 @@ export function HomeExperience() {
               </span>
             </h1>
             <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-              Search places like a map, but explore them like a travel film — routes, cost,
-              culture, food, festivals and hotel planning in one immersive flow.
+              Search places like a map, but explore them like a travel film — routes, cost, culture,
+              food, festivals and hotel planning in one immersive flow.
             </p>
 
             <div className="mt-8 max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.08] p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
@@ -168,12 +194,39 @@ export function HomeExperience() {
                 </button>
               ))}
             </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                className={[
+                  "inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-black shadow-2xl shadow-black/30 transition",
+                  canUseThreeScene
+                    ? "bg-teal-200 text-slate-950 hover:-translate-y-1 hover:bg-white"
+                    : "cursor-not-allowed border border-white/10 bg-white/[0.06] text-slate-400",
+                ].join(" ")}
+                disabled={!canUseThreeScene}
+                onClick={() => setIsThreeSceneEnabled((currentValue) => !currentValue)}
+                type="button"
+              >
+                <HydrationSafeIcon className="h-4 w-4" icon={Compass} />
+                {isThreeSceneEnabled ? "Pause 3D Earth" : "Launch 3D Earth"}
+              </button>
+              <p className="max-w-sm text-xs leading-5 text-slate-400">
+                Page smooth rahe isliye heavy WebGL globe click ke baad load hota hai.
+              </p>
+            </div>
           </motion.div>
 
           {selectedDestination ? <DestinationConsole destination={selectedDestination} /> : null}
         </div>
 
-        <section className="relative z-10 pb-5" aria-label="Featured destination postcards">
+        <motion.section
+          aria-label="Featured destination postcards"
+          className="relative z-10 pb-5"
+          initial={{ opacity: 0, y: 44 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          viewport={{ once: true, margin: "-15%" }}
+          whileInView={{ opacity: 1, y: 0 }}
+        >
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.26em] text-teal-200">
@@ -206,9 +259,26 @@ export function HomeExperience() {
               No postcards match this search yet.
             </div>
           )}
-        </section>
+        </motion.section>
       </section>
     </main>
+  );
+}
+
+function GlobeLoadingShell({ label }: { label: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="relative grid h-48 w-48 place-items-center">
+        <div className="absolute inset-0 animate-ping rounded-full border border-teal-200/30" />
+        <div className="absolute inset-6 rounded-full border border-amber-200/20" />
+        <div className="grid h-24 w-24 place-items-center rounded-full bg-teal-200 text-slate-950 shadow-2xl shadow-teal-950/50">
+          <HydrationSafeIcon className="h-8 w-8" icon={Compass} />
+        </div>
+        <p className="absolute -bottom-8 text-[0.68rem] font-black uppercase tracking-[0.24em] text-teal-100">
+          {label}
+        </p>
+      </div>
+    </div>
   );
 }
 
