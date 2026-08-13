@@ -76,7 +76,7 @@ export function HomeExperience() {
 
       <motion.section
         aria-label="Interactive travel globe"
-        className="fixed inset-y-0 right-0 w-full lg:w-[62vw]"
+        className="pointer-events-none fixed inset-y-0 right-0 w-full lg:pointer-events-auto lg:w-[62vw]"
         style={{ opacity: globeOpacity, scale: globeScale }}
       >
         {!scenePreferences.hasHydrated ? (

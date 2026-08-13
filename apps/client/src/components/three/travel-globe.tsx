@@ -2,7 +2,7 @@
 
 import { Billboard, Float, Html, Line, OrbitControls, Stars, useProgress } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BackSide,
@@ -153,6 +153,14 @@ function GlobeCore({
     destinations.find((destination) => destination.slug === selectedSlug) ?? destinations[0];
   const routeLimit = quality === "full" ? destinations.length : Math.min(destinations.length, 3);
 
+  useEffect(() => {
+    return () => {
+      earthTexture.dispose();
+      bumpTexture.dispose();
+      cloudTexture.dispose();
+    };
+  }, [bumpTexture, cloudTexture, earthTexture]);
+
   useFrame((_, delta) => {
     elapsedRef.current += delta;
     const elapsed = elapsedRef.current;
@@ -186,7 +194,7 @@ function GlobeCore({
       <group ref={earthRef} rotation={[0.04, -0.34, -0.08]}>
         <mesh>
           <sphereGeometry
-            args={[GLOBE_RADIUS, quality === "full" ? 96 : 64, quality === "full" ? 96 : 64]}
+            args={[GLOBE_RADIUS, quality === "full" ? 72 : 48, quality === "full" ? 72 : 48]}
           />
           <meshStandardMaterial
             bumpMap={bumpTexture}
@@ -205,8 +213,8 @@ function GlobeCore({
           <sphereGeometry
             args={[
               GLOBE_RADIUS + 0.028,
-              quality === "full" ? 96 : 48,
-              quality === "full" ? 96 : 48,
+              quality === "full" ? 64 : 40,
+              quality === "full" ? 64 : 40,
             ]}
           />
           <meshStandardMaterial
@@ -227,8 +235,8 @@ function GlobeCore({
           <sphereGeometry
             args={[
               GLOBE_RADIUS + 0.032,
-              quality === "full" ? 96 : 48,
-              quality === "full" ? 96 : 48,
+              quality === "full" ? 64 : 40,
+              quality === "full" ? 64 : 40,
             ]}
           />
           <meshBasicMaterial
@@ -241,7 +249,7 @@ function GlobeCore({
         </mesh>
 
         <mesh>
-          <sphereGeometry args={[GLOBE_RADIUS + 0.14, 96, 96]} />
+          <sphereGeometry args={[GLOBE_RADIUS + 0.14, 64, 64]} />
           <meshBasicMaterial
             blending={AdditiveBlending}
             color="#61d7ff"
@@ -252,7 +260,7 @@ function GlobeCore({
         </mesh>
 
         <mesh>
-          <sphereGeometry args={[GLOBE_RADIUS + 0.25, 96, 96]} />
+          <sphereGeometry args={[GLOBE_RADIUS + 0.25, 64, 64]} />
           <meshBasicMaterial
             blending={AdditiveBlending}
             color="#c9ff6f"
@@ -375,20 +383,22 @@ function DestinationHotspot({
           <sphereGeometry args={[0.043, 24, 24]} />
           <meshBasicMaterial color={isSelected ? "#ffe38a" : "#64ffe1"} toneMapped={false} />
         </mesh>
-        <Html center distanceFactor={8} position={[0, -0.18, 0]}>
-          <button
-            className={[
-              "rounded-full border px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.16em] shadow-xl backdrop-blur-xl transition",
-              isSelected
-                ? "border-amber-200/70 bg-amber-200 text-slate-950"
-                : "border-white/10 bg-slate-950/70 text-teal-100 hover:border-teal-200/60",
-            ].join(" ")}
-            onClick={() => onSelectDestination(destination.slug)}
-            type="button"
-          >
-            {destination.name}
-          </button>
-        </Html>
+        {isSelected || isHovered ? (
+          <Html center distanceFactor={8} position={[0, -0.18, 0]}>
+            <button
+              className={[
+                "rounded-full border px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.16em] shadow-xl backdrop-blur-xl transition",
+                isSelected
+                  ? "border-amber-200/70 bg-amber-200 text-slate-950"
+                  : "border-white/10 bg-slate-950/70 text-teal-100 hover:border-teal-200/60",
+              ].join(" ")}
+              onClick={() => onSelectDestination(destination.slug)}
+              type="button"
+            >
+              {destination.name}
+            </button>
+          </Html>
+        ) : null}
       </group>
     </Billboard>
   );
@@ -806,7 +816,7 @@ function createCloudTexture(quality: TravelGlobeQuality) {
 
 function createTextureCanvas(quality: TravelGlobeQuality) {
   const canvas = document.createElement("canvas");
-  canvas.width = quality === "full" ? 2048 : 1024;
+  canvas.width = quality === "full" ? 1024 : 768;
   canvas.height = canvas.width / 2;
   const context = canvas.getContext("2d");
 
@@ -1086,16 +1096,51 @@ export function TravelGlobe({
   selectedSlug,
 }: TravelGlobeProps) {
   const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const [hasWebGlFailed, setHasWebGlFailed] = useState(false);
+
+  if (hasWebGlFailed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
+        <div className="max-w-sm rounded-[2rem] border border-teal-100/15 bg-white/[0.06] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <div className="mx-auto mb-4 h-20 w-20 rounded-full border border-teal-200/40 bg-[radial-gradient(circle,rgba(45,255,209,0.28),transparent_62%)]" />
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-100">
+            Safe visual mode
+          </p>
+          <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">3D scene paused</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            Browser ne WebGL context reset kiya. Page usable rahega; tum 3D scene dobara try kar
+            sakte ho.
+          </p>
+          <button
+            className="mt-5 rounded-full bg-teal-200 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-white"
+            onClick={() => setHasWebGlFailed(false)}
+            type="button"
+          >
+            Try 3D again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Canvas
       camera={{ fov: 38, position: [0.15, 0.28, 5.3] }}
       className="cursor-grab active:cursor-grabbing"
-      dpr={quality === "full" ? [1, 1.7] : [1, 1.25]}
+      dpr={quality === "full" ? [1, 1.25] : [1, 1]}
       frameloop={reducedMotion ? "demand" : "always"}
       gl={{
-        antialias: quality === "full",
+        antialias: false,
         powerPreference: quality === "full" ? "high-performance" : "low-power",
+      }}
+      onCreated={({ gl }) => {
+        const canvas = gl.domElement;
+        const handleContextLost = (event: Event) => {
+          event.preventDefault();
+          setHasWebGlFailed(true);
+        };
+
+        canvas.addEventListener("webglcontextlost", handleContextLost, false);
       }}
       performance={{ min: 0.55 }}
     >
@@ -1107,9 +1152,9 @@ export function TravelGlobe({
       <pointLight color="#6a8bff" intensity={1.9} position={[2.8, -3.2, 3.1]} />
       <UniverseBackdrop quality={quality} reducedMotion={reducedMotion} />
       <Stars
-        count={quality === "full" ? 5200 : 1800}
-        depth={72}
-        factor={5.8}
+        count={quality === "full" ? 2400 : 900}
+        depth={64}
+        factor={5.2}
         fade
         radius={80}
         saturation={0.55}
