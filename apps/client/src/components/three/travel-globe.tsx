@@ -190,13 +190,14 @@ function GlobeCore({
           />
           <meshStandardMaterial
             bumpMap={bumpTexture}
-            bumpScale={quality === "full" ? 0.055 : 0.035}
+            bumpScale={quality === "full" ? 0.04 : 0.026}
             color="#ffffff"
-            emissive="#07122b"
-            emissiveIntensity={0.18}
+            emissive="#071d30"
+            emissiveIntensity={0.38}
+            emissiveMap={earthTexture}
             map={earthTexture}
             metalness={0.05}
-            roughness={0.74}
+            roughness={0.9}
           />
         </mesh>
 
@@ -213,7 +214,7 @@ function GlobeCore({
             blending={AdditiveBlending}
             color="#f5fbff"
             depthWrite={false}
-            opacity={0.3}
+            opacity={0.18}
             transparent
           />
         </mesh>
@@ -233,18 +234,29 @@ function GlobeCore({
           <meshBasicMaterial
             blending={AdditiveBlending}
             color="#6fffe0"
-            opacity={0.065}
+            opacity={0.035}
             transparent
             wireframe
           />
         </mesh>
 
         <mesh>
-          <sphereGeometry args={[GLOBE_RADIUS + 0.18, 96, 96]} />
+          <sphereGeometry args={[GLOBE_RADIUS + 0.14, 96, 96]} />
           <meshBasicMaterial
             blending={AdditiveBlending}
-            color="#57c8ff"
-            opacity={0.16}
+            color="#61d7ff"
+            opacity={0.18}
+            side={BackSide}
+            transparent
+          />
+        </mesh>
+
+        <mesh>
+          <sphereGeometry args={[GLOBE_RADIUS + 0.25, 96, 96]} />
+          <meshBasicMaterial
+            blending={AdditiveBlending}
+            color="#c9ff6f"
+            opacity={0.075}
             side={BackSide}
             transparent
           />
@@ -597,17 +609,17 @@ function EarthMapGrid({ quality }: { quality: TravelGlobeQuality }) {
           color={lat === 0 ? "#9dfbed" : "#ffffff"}
           key={`lat-${lat}`}
           lineWidth={lat === 0 ? 0.55 : 0.34}
-          opacity={lat === 0 ? 0.22 : 0.12}
+          opacity={lat === 0 ? 0.08 : 0.04}
           points={createLatitudePoints(lat)}
           transparent
         />
       ))}
       {longitudeLines.map((lng) => (
         <Line
-          color="#ffffff"
+          color="#9dfbed"
           key={`lng-${lng}`}
           lineWidth={0.28}
-          opacity={0.1}
+          opacity={0.035}
           points={createLongitudePoints(lng)}
           transparent
         />
@@ -709,19 +721,21 @@ function createEarthTexture(quality: TravelGlobeQuality) {
   const width = canvas.width;
   const height = canvas.height;
   const oceanGradient = context.createLinearGradient(0, 0, width, height);
-  oceanGradient.addColorStop(0, "#07172f");
-  oceanGradient.addColorStop(0.42, "#0b3d55");
-  oceanGradient.addColorStop(0.7, "#06253f");
-  oceanGradient.addColorStop(1, "#010914");
+  oceanGradient.addColorStop(0, "#020711");
+  oceanGradient.addColorStop(0.34, "#051426");
+  oceanGradient.addColorStop(0.56, "#071b2d");
+  oceanGradient.addColorStop(0.78, "#030a16");
+  oceanGradient.addColorStop(1, "#00030a");
 
   context.fillStyle = oceanGradient;
   context.fillRect(0, 0, width, height);
 
+  drawEarthVignette(context, width, height);
   drawOceanTexture(context, width, height);
   drawLandmasses(context, width, height);
   drawIndiaFocus(context, width, height);
-  drawMapGraticule(context, width, height);
   drawNightLights(context, width, height);
+  drawEarthScanlines(context, width, height);
 
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
@@ -738,10 +752,10 @@ function createEarthBumpTexture(quality: TravelGlobeQuality) {
   context.fillStyle = "#111111";
   context.fillRect(0, 0, width, height);
 
-  context.fillStyle = "#a8a8a8";
+  context.fillStyle = "#707070";
   LANDMASSES.forEach((landmass) => drawPolygon(context, landmass, width, height, true));
 
-  context.fillStyle = "#d7d7d7";
+  context.fillStyle = "#9c9c9c";
   drawPolygon(context, INDIA_OUTLINE, width, height, true);
 
   const texture = new CanvasTexture(canvas);
@@ -756,7 +770,7 @@ function createCloudTexture(quality: TravelGlobeQuality) {
   const height = canvas.height;
 
   context.clearRect(0, 0, width, height);
-  context.fillStyle = "rgba(255,255,255,0.28)";
+  context.fillStyle = "rgba(170,225,255,0.18)";
 
   const cloudBands = [
     { lat: 42, offset: 0.04, size: 0.12 },
@@ -775,7 +789,7 @@ function createCloudTexture(quality: TravelGlobeQuality) {
         point.x,
         point.y,
         width * band.size * (0.75 + (index % 3) * 0.12),
-        height * 0.034,
+        height * 0.022,
         Math.sin(index + bandIndex) * 0.42,
         0,
         Math.PI * 2,
@@ -803,18 +817,37 @@ function createTextureCanvas(quality: TravelGlobeQuality) {
   return { canvas, context };
 }
 
+function drawEarthVignette(context: CanvasRenderingContext2D, width: number, height: number) {
+  context.save();
+  const glow = context.createRadialGradient(
+    width * 0.56,
+    height * 0.44,
+    width * 0.04,
+    width * 0.56,
+    height * 0.44,
+    width * 0.7,
+  );
+  glow.addColorStop(0, "rgba(35,137,189,0.3)");
+  glow.addColorStop(0.42, "rgba(11,49,82,0.18)");
+  glow.addColorStop(0.78, "rgba(1,5,12,0.16)");
+  glow.addColorStop(1, "rgba(0,0,0,0.6)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, width, height);
+  context.restore();
+}
+
 function drawOceanTexture(context: CanvasRenderingContext2D, width: number, height: number) {
   context.save();
-  context.globalAlpha = 0.22;
-  context.strokeStyle = "#7bdff6";
-  context.lineWidth = Math.max(1, width * 0.0008);
+  context.globalAlpha = 0.18;
+  context.strokeStyle = "#2a89c0";
+  context.lineWidth = Math.max(0.8, width * 0.00045);
 
-  for (let index = 0; index < 18; index += 1) {
+  for (let index = 0; index < 30; index += 1) {
     context.beginPath();
-    const y = (height / 18) * index + Math.sin(index * 1.8) * height * 0.018;
+    const y = (height / 30) * index + Math.sin(index * 1.8) * height * 0.01;
 
-    for (let x = 0; x <= width; x += 48) {
-      const waveY = y + Math.sin(x * 0.012 + index) * height * 0.012;
+    for (let x = 0; x <= width; x += 34) {
+      const waveY = y + Math.sin(x * 0.016 + index) * height * 0.006;
 
       if (x === 0) {
         context.moveTo(x, waveY);
@@ -831,57 +864,24 @@ function drawOceanTexture(context: CanvasRenderingContext2D, width: number, heig
 
 function drawLandmasses(context: CanvasRenderingContext2D, width: number, height: number) {
   LANDMASSES.forEach((landmass) => {
-    const landGradient = context.createLinearGradient(0, height * 0.2, width, height * 0.82);
-    landGradient.addColorStop(0, "#88a95f");
-    landGradient.addColorStop(0.5, "#3f7f56");
-    landGradient.addColorStop(1, "#c1a15a");
-
-    context.fillStyle = landGradient;
-    context.strokeStyle = "rgba(255,255,255,0.34)";
-    context.lineWidth = Math.max(1.2, width * 0.001);
+    context.fillStyle = "rgba(4, 13, 21, 0.72)";
+    context.strokeStyle = "rgba(116, 223, 255, 0.34)";
+    context.lineWidth = Math.max(1, width * 0.0009);
     drawPolygon(context, landmass, width, height, true);
     context.stroke();
   });
+
+  drawLandHalftone(context, width, height);
+  drawCoastlineGlow(context, width, height);
 }
 
 function drawIndiaFocus(context: CanvasRenderingContext2D, width: number, height: number) {
   context.save();
-  context.fillStyle = "rgba(248, 213, 106, 0.72)";
-  context.strokeStyle = "rgba(255, 255, 255, 0.78)";
-  context.lineWidth = Math.max(1.6, width * 0.0012);
+  context.fillStyle = "rgba(248, 213, 106, 0.12)";
+  context.strokeStyle = "rgba(255, 232, 126, 0.62)";
+  context.lineWidth = Math.max(1.2, width * 0.0009);
   drawPolygon(context, INDIA_OUTLINE, width, height, true);
   context.stroke();
-
-  const labelPoint = projectMapPoint(78, 22, width, height);
-  context.fillStyle = "rgba(255, 242, 166, 0.88)";
-  context.font = `${Math.round(width * 0.014)}px sans-serif`;
-  context.fillText("India", labelPoint.x + width * 0.008, labelPoint.y);
-  context.restore();
-}
-
-function drawMapGraticule(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  context.strokeStyle = "rgba(255,255,255,0.12)";
-  context.lineWidth = Math.max(0.8, width * 0.00055);
-
-  for (let lng = -150; lng <= 150; lng += 30) {
-    const start = projectMapPoint(lng, -82, width, height);
-    const end = projectMapPoint(lng, 82, width, height);
-    context.beginPath();
-    context.moveTo(start.x, start.y);
-    context.lineTo(end.x, end.y);
-    context.stroke();
-  }
-
-  for (let lat = -60; lat <= 60; lat += 30) {
-    const start = projectMapPoint(-180, lat, width, height);
-    const end = projectMapPoint(180, lat, width, height);
-    context.beginPath();
-    context.moveTo(start.x, start.y);
-    context.lineTo(end.x, end.y);
-    context.stroke();
-  }
-
   context.restore();
 }
 
@@ -903,10 +903,10 @@ function drawNightLights(context: CanvasRenderingContext2D, width: number, heigh
   context.save();
   lightPoints.forEach(([lng, lat], index) => {
     const point = projectMapPoint(lng, lat, width, height);
-    const radius = width * (0.0022 + (index % 3) * 0.0004);
+    const radius = width * (0.0014 + (index % 3) * 0.0003);
     const glow = context.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius * 5);
-    glow.addColorStop(0, "rgba(255,236,160,0.95)");
-    glow.addColorStop(0.35, "rgba(255,172,93,0.34)");
+    glow.addColorStop(0, "rgba(255,236,160,0.75)");
+    glow.addColorStop(0.35, "rgba(255,172,93,0.22)");
     glow.addColorStop(1, "rgba(255,172,93,0)");
     context.fillStyle = glow;
     context.beginPath();
@@ -916,7 +916,109 @@ function drawNightLights(context: CanvasRenderingContext2D, width: number, heigh
   context.restore();
 }
 
-function drawPolygon(
+function drawLandHalftone(context: CanvasRenderingContext2D, width: number, height: number) {
+  const step = Math.max(6, Math.round(width * 0.0078));
+  const baseRadius = Math.max(1.2, width * 0.00135);
+
+  context.save();
+  context.globalCompositeOperation = "lighter";
+
+  for (let y = step; y < height - step; y += step) {
+    const offset = Math.floor(y / step) % 2 === 0 ? step * 0.5 : 0;
+
+    for (let x = step + offset; x < width - step; x += step) {
+      const lng = (x / width) * 360 - 180;
+      const lat = 90 - (y / height) * 180;
+
+      if (!isLandPoint(lng, lat)) {
+        continue;
+      }
+
+      const daySide = 0.42 + 0.58 * Math.max(0, Math.cos(((lng + 52) * Math.PI) / 180));
+      const latitudeFade = 0.58 + 0.42 * Math.cos((Math.abs(lat) * Math.PI) / 180);
+      const shimmer = 0.82 + 0.18 * Math.sin(x * 0.037 + y * 0.018);
+      const alpha = Math.min(0.92, 0.24 + daySide * latitudeFade * shimmer * 0.58);
+      const radius = baseRadius * (0.74 + daySide * 0.56);
+
+      context.fillStyle = `rgba(165, 229, 255, ${alpha})`;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+
+      if (daySide > 0.78) {
+        context.fillStyle = `rgba(209, 255, 129, ${(daySide - 0.78) * 0.44})`;
+        context.beginPath();
+        context.arc(x + radius * 0.35, y - radius * 0.25, radius * 0.92, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+  }
+
+  context.restore();
+}
+
+function drawCoastlineGlow(context: CanvasRenderingContext2D, width: number, height: number) {
+  context.save();
+  context.globalCompositeOperation = "lighter";
+
+  LANDMASSES.forEach((landmass) => {
+    context.strokeStyle = "rgba(137, 232, 255, 0.38)";
+    context.lineWidth = Math.max(1.2, width * 0.0009);
+    drawPath(context, landmass, width, height, true);
+    context.stroke();
+
+    context.strokeStyle = "rgba(200, 255, 111, 0.14)";
+    context.lineWidth = Math.max(2.6, width * 0.0022);
+    drawPath(context, landmass, width, height, true);
+    context.stroke();
+  });
+
+  context.restore();
+}
+
+function drawEarthScanlines(context: CanvasRenderingContext2D, width: number, height: number) {
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.strokeStyle = "rgba(157,251,237,0.07)";
+  context.lineWidth = Math.max(0.8, width * 0.00035);
+
+  for (let y = 0; y <= height; y += Math.max(5, width * 0.006)) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+  }
+
+  context.restore();
+}
+
+function isLandPoint(lng: number, lat: number) {
+  return LANDMASSES.some((landmass) => pointInPolygon(lng, lat, landmass));
+}
+
+function pointInPolygon(lng: number, lat: number, polygon: GeoPoint[]) {
+  let isInside = false;
+
+  for (
+    let index = 0, previousIndex = polygon.length - 1;
+    index < polygon.length;
+    previousIndex = index
+  ) {
+    const [lngA, latA] = polygon[index];
+    const [lngB, latB] = polygon[previousIndex];
+    const intersects =
+      latA > lat !== latB > lat &&
+      lng < ((lngB - lngA) * (lat - latA)) / (latB - latA || Number.EPSILON) + lngA;
+
+    if (intersects) {
+      isInside = !isInside;
+    }
+  }
+
+  return isInside;
+}
+
+function drawPath(
   context: CanvasRenderingContext2D,
   points: GeoPoint[],
   width: number,
@@ -939,7 +1041,16 @@ function drawPolygon(
   if (closePath) {
     context.closePath();
   }
+}
 
+function drawPolygon(
+  context: CanvasRenderingContext2D,
+  points: GeoPoint[],
+  width: number,
+  height: number,
+  closePath: boolean,
+) {
+  drawPath(context, points, width, height, closePath);
   context.fill();
 }
 
@@ -974,9 +1085,12 @@ export function TravelGlobe({
   reducedMotion = false,
   selectedSlug,
 }: TravelGlobeProps) {
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+
   return (
     <Canvas
       camera={{ fov: 38, position: [0.15, 0.28, 5.3] }}
+      className="cursor-grab active:cursor-grabbing"
       dpr={quality === "full" ? [1, 1.7] : [1, 1.25]}
       frameloop={reducedMotion ? "demand" : "always"}
       gl={{
@@ -1011,13 +1125,22 @@ export function TravelGlobe({
         />
       </Suspense>
       <OrbitControls
-        autoRotate={!reducedMotion}
+        autoRotate={!reducedMotion && !isUserInteracting}
         autoRotateSpeed={quality === "full" ? 0.34 : 0.18}
         enableDamping
         enablePan={false}
-        enableZoom={false}
+        enableRotate
+        enableZoom
         maxPolarAngle={Math.PI * 0.72}
+        maxDistance={6.35}
+        minDistance={3.55}
         minPolarAngle={Math.PI * 0.28}
+        onEnd={() => {
+          window.setTimeout(() => setIsUserInteracting(false), 900);
+        }}
+        onStart={() => setIsUserInteracting(true)}
+        rotateSpeed={0.58}
+        zoomSpeed={0.42}
       />
     </Canvas>
   );
