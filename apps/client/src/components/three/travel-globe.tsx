@@ -1,14 +1,12 @@
 "use client";
 
-import { Billboard, Float, Html, Line, OrbitControls, Stars, useProgress } from "@react-three/drei";
+import { Billboard, Float, Html, Line, OrbitControls, Stars } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BackSide,
-  CanvasTexture,
   QuadraticBezierCurve3,
-  SRGBColorSpace,
   Vector3,
   type Group,
   type Mesh,
@@ -26,104 +24,10 @@ export type TravelGlobeProps = {
 };
 
 const GLOBE_RADIUS = 1.66;
-const HOTSPOT_RADIUS = 1.78;
+const SURFACE_RADIUS = 1.79;
+const INDIA_CENTER = { lat: 22.5, lng: 79 };
 
-type GeoPoint = [lng: number, lat: number];
-
-const LANDMASSES: GeoPoint[][] = [
-  [
-    [-168, 70],
-    [-138, 73],
-    [-108, 62],
-    [-84, 54],
-    [-57, 50],
-    [-50, 36],
-    [-76, 26],
-    [-96, 16],
-    [-118, 24],
-    [-128, 42],
-    [-148, 58],
-  ],
-  [
-    [-82, 12],
-    [-62, 9],
-    [-47, -5],
-    [-38, -22],
-    [-48, -54],
-    [-67, -56],
-    [-78, -35],
-    [-75, -9],
-  ],
-  [
-    [-24, 56],
-    [-8, 70],
-    [30, 71],
-    [70, 63],
-    [112, 66],
-    [154, 53],
-    [164, 34],
-    [138, 16],
-    [108, 8],
-    [84, 23],
-    [66, 8],
-    [48, 24],
-    [28, 38],
-    [8, 36],
-    [-8, 43],
-  ],
-  [
-    [-18, 36],
-    [14, 38],
-    [35, 30],
-    [51, 8],
-    [43, -18],
-    [30, -35],
-    [14, -35],
-    [0, -24],
-    [-11, -8],
-    [-16, 16],
-  ],
-  [
-    [112, -11],
-    [154, -11],
-    [154, -33],
-    [134, -43],
-    [113, -34],
-  ],
-  [
-    [-74, 70],
-    [-52, 82],
-    [-22, 76],
-    [-32, 61],
-    [-58, 60],
-  ],
-  [
-    [-180, -67],
-    [-132, -65],
-    [-80, -69],
-    [-30, -66],
-    [22, -70],
-    [76, -66],
-    [132, -69],
-    [180, -66],
-    [180, -88],
-    [-180, -88],
-  ],
-];
-
-const INDIA_OUTLINE: GeoPoint[] = [
-  [68, 23],
-  [74, 34],
-  [82, 31],
-  [91, 25],
-  [94, 21],
-  [87, 18],
-  [80, 8],
-  [72, 8],
-  [68, 17],
-];
-
-function coordinateToVector(lat: number, lng: number, radius = HOTSPOT_RADIUS) {
+function coordinateToVector(lat: number, lng: number, radius = SURFACE_RADIUS) {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lng + 180) * (Math.PI / 180);
 
@@ -137,186 +41,84 @@ function coordinateToVector(lat: number, lng: number, radius = HOTSPOT_RADIUS) {
 function GlobeCore({
   destinations,
   onSelectDestination,
-  quality = "full",
+  quality = "balanced",
   reducedMotion = false,
   selectedSlug,
 }: TravelGlobeProps) {
   const earthRef = useRef<Group>(null);
-  const cloudRef = useRef<Mesh>(null);
-  const gridRef = useRef<Group>(null);
-  const ringsRef = useRef<Group>(null);
+  const ringRef = useRef<Group>(null);
   const elapsedRef = useRef(0);
-  const earthTexture = useMemo(() => createEarthTexture(quality), [quality]);
-  const bumpTexture = useMemo(() => createEarthBumpTexture(quality), [quality]);
-  const cloudTexture = useMemo(() => createCloudTexture(quality), [quality]);
   const selectedDestination =
     destinations.find((destination) => destination.slug === selectedSlug) ?? destinations[0];
-  const routeLimit = quality === "full" ? destinations.length : Math.min(destinations.length, 3);
+  const visibleDestinations = quality === "full" ? destinations : destinations.slice(0, 5);
+  const routes = useMemo(() => {
+    if (!selectedDestination) {
+      return [];
+    }
 
-  useEffect(() => {
-    return () => {
-      earthTexture.dispose();
-      bumpTexture.dispose();
-      cloudTexture.dispose();
-    };
-  }, [bumpTexture, cloudTexture, earthTexture]);
+    return visibleDestinations
+      .filter((destination) => destination.slug !== selectedDestination.slug)
+      .slice(0, quality === "full" ? 5 : 3);
+  }, [quality, selectedDestination, visibleDestinations]);
 
   useFrame((_, delta) => {
     elapsedRef.current += delta;
-    const elapsed = elapsedRef.current;
 
-    if (earthRef.current) {
-      earthRef.current.rotation.y += reducedMotion
-        ? 0
-        : delta * (quality === "full" ? 0.055 : 0.035);
+    if (earthRef.current && !reducedMotion) {
+      earthRef.current.rotation.y += delta * (quality === "full" ? 0.035 : 0.024);
     }
 
-    if (cloudRef.current) {
-      cloudRef.current.rotation.y += reducedMotion ? 0 : delta * 0.028;
-    }
-
-    if (gridRef.current) {
-      gridRef.current.rotation.x = reducedMotion ? 0 : Math.sin(elapsed * 0.18) * 0.012;
-    }
-
-    if (ringsRef.current) {
-      ringsRef.current.rotation.z += reducedMotion ? 0 : delta * 0.085;
-      ringsRef.current.rotation.y -= reducedMotion ? 0 : delta * 0.035;
+    if (ringRef.current && !reducedMotion) {
+      ringRef.current.rotation.z += delta * 0.08;
+      ringRef.current.rotation.y -= delta * 0.025;
     }
   });
 
   return (
     <Float
-      speed={reducedMotion ? 0 : 1.2}
-      rotationIntensity={reducedMotion ? 0 : 0.16}
-      floatIntensity={reducedMotion ? 0 : 0.42}
+      speed={reducedMotion ? 0 : 0.75}
+      rotationIntensity={reducedMotion ? 0 : 0.08}
+      floatIntensity={reducedMotion ? 0 : 0.2}
     >
-      <group ref={earthRef} rotation={[0.04, -0.34, -0.08]}>
-        <mesh>
-          <sphereGeometry
-            args={[GLOBE_RADIUS, quality === "full" ? 72 : 48, quality === "full" ? 72 : 48]}
-          />
-          <meshStandardMaterial
-            bumpMap={bumpTexture}
-            bumpScale={quality === "full" ? 0.04 : 0.026}
-            color="#ffffff"
-            emissive="#071d30"
-            emissiveIntensity={0.38}
-            emissiveMap={earthTexture}
-            map={earthTexture}
-            metalness={0.05}
-            roughness={0.9}
-          />
-        </mesh>
+      <group ref={earthRef} rotation={[0.05, -0.42, -0.08]}>
+        <EarthShell quality={quality} />
+        <EarthGrid quality={quality} />
 
-        <mesh ref={cloudRef}>
-          <sphereGeometry
-            args={[
-              GLOBE_RADIUS + 0.028,
-              quality === "full" ? 64 : 40,
-              quality === "full" ? 64 : 40,
-            ]}
-          />
-          <meshStandardMaterial
-            alphaMap={cloudTexture}
-            blending={AdditiveBlending}
-            color="#f5fbff"
-            depthWrite={false}
-            opacity={0.18}
-            transparent
-          />
-        </mesh>
-
-        <group ref={gridRef}>
-          <EarthMapGrid quality={quality} />
-        </group>
-
-        <mesh>
-          <sphereGeometry
-            args={[
-              GLOBE_RADIUS + 0.032,
-              quality === "full" ? 64 : 40,
-              quality === "full" ? 64 : 40,
-            ]}
-          />
-          <meshBasicMaterial
-            blending={AdditiveBlending}
-            color="#6fffe0"
-            opacity={0.035}
-            transparent
-            wireframe
-          />
-        </mesh>
-
-        <mesh>
-          <sphereGeometry args={[GLOBE_RADIUS + 0.14, 64, 64]} />
-          <meshBasicMaterial
-            blending={AdditiveBlending}
-            color="#61d7ff"
-            opacity={0.18}
-            side={BackSide}
-            transparent
-          />
-        </mesh>
-
-        <mesh>
-          <sphereGeometry args={[GLOBE_RADIUS + 0.25, 64, 64]} />
-          <meshBasicMaterial
-            blending={AdditiveBlending}
-            color="#c9ff6f"
-            opacity={0.075}
-            side={BackSide}
-            transparent
-          />
-        </mesh>
-
-        <group ref={ringsRef}>
-          <mesh rotation={[1.22, 0.2, 0.45]}>
-            <torusGeometry args={[2.12, 0.009, 12, 180]} />
-            <meshBasicMaterial color="#f8d56a" opacity={0.8} transparent />
-          </mesh>
-          <mesh rotation={[1.58, -0.18, -0.75]}>
-            <torusGeometry args={[2.42, 0.006, 12, 180]} />
-            <meshBasicMaterial color="#ff7d66" opacity={0.58} transparent />
-          </mesh>
-          <mesh rotation={[0.88, 0.68, 1.05]}>
-            <torusGeometry args={[1.88, 0.006, 12, 180]} />
-            <meshBasicMaterial color="#8df8ff" opacity={0.46} transparent />
-          </mesh>
+        <group ref={ringRef}>
+          <OrbitRing rotation={[Math.PI / 2, 0, 0]} scale={1} />
+          <OrbitRing rotation={[Math.PI / 2.2, 0.45, 0.2]} scale={1.08} />
+          {quality === "full" ? <OrbitRing rotation={[1.2, -0.25, 0.9]} scale={1.15} /> : null}
         </group>
 
         {selectedDestination
-          ? destinations
-              .filter((destination) => destination.slug !== selectedDestination.slug)
-              .slice(0, routeLimit)
-              .map((destination) => (
-                <RouteArc
-                  key={`${selectedDestination.slug}-${destination.slug}`}
-                  destination={destination}
-                  from={selectedDestination}
-                  quality={quality}
-                  reducedMotion={reducedMotion}
-                />
-              ))
+          ? routes.map((destination, index) => (
+              <RouteArc
+                destination={destination}
+                index={index}
+                key={`${selectedDestination.slug}-${destination.slug}`}
+                quality={quality}
+                reducedMotion={reducedMotion}
+                selectedDestination={selectedDestination}
+              />
+            ))
           : null}
 
-        {destinations.map((destination) => (
-          <LandmarkMiniatures
-            destination={destination}
-            isSelected={destination.slug === selectedSlug}
-            key={`landmark-${destination.slug}`}
-            quality={quality}
-            reducedMotion={reducedMotion}
-          />
-        ))}
-
-        {destinations.map((destination) => (
+        {visibleDestinations.map((destination) => (
           <DestinationHotspot
             destination={destination}
             isSelected={destination.slug === selectedSlug}
             key={destination.slug}
             onSelectDestination={onSelectDestination}
-            reducedMotion={reducedMotion}
+            quality={quality}
+          />
+        ))}
+
+        {visibleDestinations.map((destination) => (
+          <LandmarkMiniature
+            destination={destination}
+            isSelected={destination.slug === selectedSlug}
+            key={`${destination.slug}-miniature`}
+            quality={quality}
           />
         ))}
       </group>
@@ -324,51 +126,162 @@ function GlobeCore({
   );
 }
 
+function EarthShell({ quality }: { quality: TravelGlobeQuality }) {
+  const segments = quality === "full" ? 56 : 40;
+
+  return (
+    <>
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS, segments, segments]} />
+        <meshStandardMaterial
+          color="#071c2d"
+          emissive="#08263b"
+          emissiveIntensity={0.48}
+          metalness={0.08}
+          roughness={0.86}
+        />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS + 0.012, segments, segments]} />
+        <meshBasicMaterial
+          blending={AdditiveBlending}
+          color="#6ee7ff"
+          opacity={0.09}
+          transparent
+          wireframe
+        />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS + 0.12, 36, 36]} />
+        <meshBasicMaterial
+          blending={AdditiveBlending}
+          color="#63f6d5"
+          opacity={0.14}
+          side={BackSide}
+          transparent
+        />
+      </mesh>
+
+      <mesh position={[-0.42, 0.55, 1.47]} rotation={[0.65, -0.1, 0.24]}>
+        <circleGeometry args={[0.56, 48]} />
+        <meshBasicMaterial blending={AdditiveBlending} color="#8affd8" opacity={0.13} transparent />
+      </mesh>
+    </>
+  );
+}
+
+function OrbitRing({ rotation, scale }: { rotation: [number, number, number]; scale: number }) {
+  return (
+    <mesh rotation={rotation} scale={scale}>
+      <torusGeometry args={[GLOBE_RADIUS + 0.06, 0.0025, 8, 96]} />
+      <meshBasicMaterial blending={AdditiveBlending} color="#76ffe3" opacity={0.25} transparent />
+    </mesh>
+  );
+}
+
+function EarthGrid({ quality }: { quality: TravelGlobeQuality }) {
+  const latitudeLines = quality === "full" ? [-60, -30, 0, 30, 60] : [-45, 0, 45];
+  const longitudeLines = quality === "full" ? [-120, -60, 0, 60, 120, 180] : [-90, 0, 90, 180];
+
+  return (
+    <group>
+      {latitudeLines.map((lat) => (
+        <Line
+          color="#86fff1"
+          key={`lat-${lat}`}
+          lineWidth={1}
+          opacity={0.16}
+          points={createLatitudePoints(lat)}
+          transparent
+        />
+      ))}
+      {longitudeLines.map((lng) => (
+        <Line
+          color="#8ac7ff"
+          key={`lng-${lng}`}
+          lineWidth={1}
+          opacity={0.11}
+          points={createLongitudePoints(lng)}
+          transparent
+        />
+      ))}
+      <Line
+        color="#ffe29b"
+        lineWidth={1.2}
+        opacity={0.38}
+        points={createIndiaPulsePath()}
+        transparent
+      />
+    </group>
+  );
+}
+
+function createLatitudePoints(lat: number) {
+  return Array.from({ length: 73 }, (_, index) => {
+    const lng = -180 + index * 5;
+
+    return coordinateToVector(lat, lng, GLOBE_RADIUS + 0.018);
+  });
+}
+
+function createLongitudePoints(lng: number) {
+  return Array.from({ length: 37 }, (_, index) => {
+    const lat = -90 + index * 5;
+
+    return coordinateToVector(lat, lng, GLOBE_RADIUS + 0.018);
+  });
+}
+
+function createIndiaPulsePath() {
+  return [
+    [68, 23],
+    [74, 34],
+    [82, 31],
+    [91, 25],
+    [94, 21],
+    [87, 18],
+    [80, 8],
+    [72, 8],
+    [68, 17],
+    [68, 23],
+  ].map(([lng, lat]) => coordinateToVector(lat, lng, GLOBE_RADIUS + 0.035));
+}
+
 function DestinationHotspot({
   destination,
   isSelected,
   onSelectDestination,
-  reducedMotion,
+  quality,
 }: {
   destination: Destination;
   isSelected: boolean;
   onSelectDestination: (slug: string) => void;
-  reducedMotion: boolean;
+  quality: TravelGlobeQuality;
 }) {
+  const markerRef = useRef<Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const pulseRef = useRef<Mesh>(null);
-  const dotRef = useRef<Mesh>(null);
-  const elapsedRef = useRef(0);
   const position = useMemo(
     () => coordinateToVector(destination.coordinates.lat, destination.coordinates.lng),
     [destination.coordinates.lat, destination.coordinates.lng],
   );
 
-  useFrame((_, delta) => {
-    elapsedRef.current += delta;
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(elapsedRef.current * 3.4) * 0.12;
-
-    if (pulseRef.current) {
-      pulseRef.current.scale.setScalar(isSelected ? 1.7 * pulse : 1.08 * pulse);
+  useFrame((state) => {
+    if (!markerRef.current) {
+      return;
     }
 
-    if (dotRef.current) {
-      dotRef.current.scale.setScalar(isSelected || isHovered ? 1.48 : 1);
-    }
+    const pulse = Math.sin(state.clock.elapsedTime * 2.4 + position.x) * 0.08;
+    const scale = isSelected ? 1.35 + pulse : isHovered ? 1.2 : 1;
+    markerRef.current.scale.setScalar(scale);
   });
 
   return (
-    <Billboard position={position}>
-      <group>
-        <mesh ref={pulseRef}>
-          <ringGeometry args={[0.072, 0.102, 44]} />
-          <meshBasicMaterial
-            color={isSelected ? "#f8d56a" : "#35f6cf"}
-            opacity={isSelected ? 0.82 : 0.34}
-            transparent
-          />
-        </mesh>
+    <group position={position}>
+      <Billboard>
         <mesh
+          ref={markerRef}
           onClick={(event) => {
             event.stopPropagation();
             onSelectDestination(destination.slug);
@@ -378,75 +291,100 @@ function DestinationHotspot({
             event.stopPropagation();
             setIsHovered(true);
           }}
-          ref={dotRef}
         >
-          <sphereGeometry args={[0.043, 24, 24]} />
-          <meshBasicMaterial color={isSelected ? "#ffe38a" : "#64ffe1"} toneMapped={false} />
+          <sphereGeometry args={[isSelected ? 0.055 : 0.042, 18, 18]} />
+          <meshStandardMaterial
+            color={isSelected ? "#fff2a8" : "#5eead4"}
+            emissive={isSelected ? "#ffb347" : "#0f766e"}
+            emissiveIntensity={isSelected ? 1.4 : 0.95}
+            roughness={0.38}
+          />
         </mesh>
-        {isSelected || isHovered ? (
-          <Html center distanceFactor={8} position={[0, -0.18, 0]}>
+
+        <mesh scale={isSelected || isHovered ? 1.45 : 1}>
+          <ringGeometry args={[0.065, 0.082, 32]} />
+          <meshBasicMaterial
+            blending={AdditiveBlending}
+            color={isSelected ? "#facc15" : "#67e8f9"}
+            opacity={isSelected || isHovered ? 0.65 : 0.28}
+            transparent
+          />
+        </mesh>
+
+        {isSelected || isHovered || quality === "full" ? (
+          <Html center distanceFactor={9} transform>
             <button
-              className={[
-                "rounded-full border px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.16em] shadow-xl backdrop-blur-xl transition",
-                isSelected
-                  ? "border-amber-200/70 bg-amber-200 text-slate-950"
-                  : "border-white/10 bg-slate-950/70 text-teal-100 hover:border-teal-200/60",
-              ].join(" ")}
-              onClick={() => onSelectDestination(destination.slug)}
+              className="pointer-events-auto min-w-28 rounded-2xl border border-white/15 bg-slate-950/85 px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-cyan-950/50 backdrop-blur-xl"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectDestination(destination.slug);
+              }}
               type="button"
             >
-              {destination.name}
+              <span className="block text-teal-200">{destination.name}</span>
+              <span className="block text-[8px] tracking-[0.14em] text-slate-400">
+                {Math.round(
+                  distanceFromIndia(destination.coordinates.lat, destination.coordinates.lng),
+                )}{" "}
+                km
+              </span>
             </button>
           </Html>
         ) : null}
-      </group>
-    </Billboard>
+      </Billboard>
+    </group>
   );
 }
 
 function RouteArc({
   destination,
-  from,
+  index,
   quality,
   reducedMotion,
+  selectedDestination,
 }: {
   destination: Destination;
-  from: Destination;
+  index: number;
   quality: TravelGlobeQuality;
   reducedMotion: boolean;
+  selectedDestination: Destination;
 }) {
   const packetRef = useRef<Mesh>(null);
-  const elapsedRef = useRef(0);
   const points = useMemo(() => {
-    const start = coordinateToVector(from.coordinates.lat, from.coordinates.lng, HOTSPOT_RADIUS);
+    const start = coordinateToVector(
+      selectedDestination.coordinates.lat,
+      selectedDestination.coordinates.lng,
+      SURFACE_RADIUS,
+    );
     const end = coordinateToVector(
       destination.coordinates.lat,
       destination.coordinates.lng,
-      HOTSPOT_RADIUS,
+      SURFACE_RADIUS,
     );
-    const mid = start.clone().add(end).normalize().multiplyScalar(2.24);
-    const curve = new QuadraticBezierCurve3(start, mid, end);
+    const control = start
+      .clone()
+      .add(end)
+      .multiplyScalar(0.5)
+      .normalize()
+      .multiplyScalar(SURFACE_RADIUS + 0.34 + index * 0.06);
+    const curve = new QuadraticBezierCurve3(start, control, end);
 
-    return curve.getPoints(quality === "full" ? 38 : 24);
+    return curve.getPoints(quality === "full" ? 26 : 16);
   }, [
     destination.coordinates.lat,
     destination.coordinates.lng,
-    from.coordinates.lat,
-    from.coordinates.lng,
+    index,
     quality,
+    selectedDestination.coordinates.lat,
+    selectedDestination.coordinates.lng,
   ]);
-  const phase = useMemo(
-    () => (destination.slug.length + from.slug.length) * 0.037,
-    [destination.slug.length, from.slug.length],
-  );
 
-  useFrame((_, delta) => {
-    if (reducedMotion || !packetRef.current) {
+  useFrame((state) => {
+    if (!packetRef.current || reducedMotion) {
       return;
     }
 
-    elapsedRef.current += delta;
-    const progress = (elapsedRef.current * 0.36 + phase) % 1;
+    const progress = (state.clock.elapsedTime * 0.16 + index * 0.23) % 1;
     const pointIndex = Math.min(points.length - 1, Math.floor(progress * points.length));
     packetRef.current.position.copy(points[pointIndex]);
   });
@@ -454,136 +392,115 @@ function RouteArc({
   return (
     <group>
       <Line
-        color="#f8d56a"
-        lineWidth={quality === "full" ? 0.75 : 0.5}
-        opacity={reducedMotion ? 0.22 : 0.34}
+        color={index === 0 ? "#fef3c7" : "#5eead4"}
+        lineWidth={index === 0 ? 1.7 : 1.2}
+        opacity={index === 0 ? 0.8 : 0.45}
         points={points}
         transparent
       />
-      <mesh ref={packetRef} position={points[0]}>
-        <sphereGeometry args={[quality === "full" ? 0.024 : 0.018, 16, 16]} />
-        <meshBasicMaterial color="#fff2a6" toneMapped={false} />
+      <mesh ref={packetRef} position={points[index % points.length]}>
+        <sphereGeometry args={[0.025, 12, 12]} />
+        <meshBasicMaterial
+          blending={AdditiveBlending}
+          color={index === 0 ? "#facc15" : "#67e8f9"}
+          transparent
+        />
       </mesh>
     </group>
   );
 }
 
-function LandmarkMiniatures({
+function LandmarkMiniature({
   destination,
   isSelected,
   quality,
-  reducedMotion,
 }: {
   destination: Destination;
   isSelected: boolean;
   quality: TravelGlobeQuality;
-  reducedMotion: boolean;
 }) {
-  const position = useMemo(
-    () =>
-      coordinateToVector(
-        destination.coordinates.lat,
-        destination.coordinates.lng,
-        HOTSPOT_RADIUS + (isSelected ? 0.28 : 0.18),
-      ),
-    [destination.coordinates.lat, destination.coordinates.lng, isSelected],
-  );
-  const variant = useMemo(() => getLandmarkVariant(destination), [destination]);
-  const scale = quality === "full" ? (isSelected ? 0.23 : 0.15) : isSelected ? 0.2 : 0.12;
+  const position = useMemo(() => {
+    const normal = coordinateToVector(
+      destination.coordinates.lat,
+      destination.coordinates.lng,
+    ).normalize();
+
+    return normal.multiplyScalar(SURFACE_RADIUS + (isSelected ? 0.19 : 0.12));
+  }, [destination.coordinates.lat, destination.coordinates.lng, isSelected]);
+  const scale = isSelected ? 0.9 : quality === "full" ? 0.62 : 0.52;
+  const modelType = getModelType(destination);
 
   return (
-    <Billboard position={position}>
-      <Float
-        speed={reducedMotion ? 0 : 1.8}
-        rotationIntensity={reducedMotion ? 0 : 0.08}
-        floatIntensity={reducedMotion ? 0 : 0.24}
-      >
-        <group scale={scale}>
-          <mesh position={[0, -0.36, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.82, 48]} />
-            <meshBasicMaterial
-              color={isSelected ? "#17321d" : "#04191f"}
-              opacity={isSelected ? 0.9 : 0.58}
-              transparent
-            />
-          </mesh>
-          {variant === "coastal" ? <CoastalLandmark /> : null}
-          {variant === "temple" ? <TempleLandmark /> : null}
-          {variant === "fort" ? <FortLandmark /> : null}
+    <group position={position} scale={scale}>
+      <Billboard>
+        <group rotation={[0, 0, -0.05]}>
+          {modelType === "coast" ? (
+            <CoastModel />
+          ) : modelType === "temple" ? (
+            <TempleModel />
+          ) : (
+            <FortModel />
+          )}
         </group>
-      </Float>
-    </Billboard>
+      </Billboard>
+    </group>
   );
 }
 
-function FortLandmark() {
+function FortModel() {
   return (
     <group>
-      <mesh position={[-0.34, 0, 0]}>
-        <boxGeometry args={[0.22, 0.62, 0.28]} />
-        <meshStandardMaterial color="#e9a85a" emissive="#4b210c" emissiveIntensity={0.18} />
+      <mesh position={[0, 0.035, 0]}>
+        <boxGeometry args={[0.16, 0.07, 0.05]} />
+        <meshStandardMaterial color="#fbbf77" emissive="#7c2d12" emissiveIntensity={0.18} />
       </mesh>
-      <mesh position={[0, 0.08, 0]}>
-        <boxGeometry args={[0.54, 0.78, 0.34]} />
-        <meshStandardMaterial color="#f4c777" emissive="#4b210c" emissiveIntensity={0.2} />
+      <mesh position={[-0.06, 0.095, 0]}>
+        <boxGeometry args={[0.04, 0.08, 0.045]} />
+        <meshStandardMaterial color="#fed7aa" emissive="#7c2d12" emissiveIntensity={0.16} />
       </mesh>
-      <mesh position={[0.34, 0, 0]}>
-        <boxGeometry args={[0.22, 0.62, 0.28]} />
-        <meshStandardMaterial color="#e9a85a" emissive="#4b210c" emissiveIntensity={0.18} />
-      </mesh>
-      <mesh position={[0, 0.58, 0]}>
-        <coneGeometry args={[0.38, 0.28, 4]} />
-        <meshStandardMaterial color="#ffdc8a" emissive="#5b2c0d" emissiveIntensity={0.22} />
+      <mesh position={[0.06, 0.095, 0]}>
+        <boxGeometry args={[0.04, 0.08, 0.045]} />
+        <meshStandardMaterial color="#fed7aa" emissive="#7c2d12" emissiveIntensity={0.16} />
       </mesh>
     </group>
   );
 }
 
-function TempleLandmark() {
+function TempleModel() {
   return (
     <group>
-      <mesh position={[0, -0.02, 0]}>
-        <boxGeometry args={[0.7, 0.28, 0.42]} />
-        <meshStandardMaterial color="#ffe0a1" emissive="#5c2b0d" emissiveIntensity={0.16} />
+      <mesh position={[0, 0.035, 0]}>
+        <cylinderGeometry args={[0.075, 0.09, 0.07, 6]} />
+        <meshStandardMaterial color="#fde68a" emissive="#92400e" emissiveIntensity={0.16} />
       </mesh>
-      <mesh position={[0, 0.34, 0]}>
-        <coneGeometry args={[0.36, 0.86, 5]} />
-        <meshStandardMaterial color="#f8d56a" emissive="#65410d" emissiveIntensity={0.2} />
-      </mesh>
-      <mesh position={[0, 0.88, 0]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshBasicMaterial color="#7effdf" toneMapped={false} />
+      <mesh position={[0, 0.105, 0]}>
+        <coneGeometry args={[0.085, 0.12, 6]} />
+        <meshStandardMaterial color="#f97316" emissive="#9a3412" emissiveIntensity={0.2} />
       </mesh>
     </group>
   );
 }
 
-function CoastalLandmark() {
+function CoastModel() {
   return (
     <group>
-      <mesh position={[-0.2, 0.14, 0]} rotation={[0, 0, -0.28]}>
-        <cylinderGeometry args={[0.045, 0.07, 0.92, 12]} />
-        <meshStandardMaterial color="#b87742" emissive="#39190a" emissiveIntensity={0.12} />
+      <mesh position={[0, 0.025, 0]}>
+        <sphereGeometry args={[0.07, 14, 8, 0, Math.PI]} />
+        <meshStandardMaterial color="#67e8f9" emissive="#155e75" emissiveIntensity={0.28} />
       </mesh>
-      <mesh position={[-0.34, 0.66, 0]} rotation={[0, 0, 0.82]}>
-        <coneGeometry args={[0.2, 0.42, 8]} />
-        <meshStandardMaterial color="#64ffe1" emissive="#0c4c42" emissiveIntensity={0.34} />
-      </mesh>
-      <mesh position={[0.08, -0.04, 0]}>
-        <torusGeometry args={[0.32, 0.038, 12, 64]} />
-        <meshStandardMaterial color="#f8d56a" emissive="#6b4b10" emissiveIntensity={0.2} />
-      </mesh>
-      <mesh position={[0.36, 0.02, 0]}>
-        <sphereGeometry args={[0.12, 18, 18]} />
-        <meshBasicMaterial color="#ff7d66" toneMapped={false} />
+      <mesh position={[0.055, 0.085, 0]} rotation={[0, 0, -0.4]}>
+        <coneGeometry args={[0.025, 0.11, 5]} />
+        <meshStandardMaterial color="#34d399" emissive="#047857" emissiveIntensity={0.18} />
       </mesh>
     </group>
   );
 }
 
-function getLandmarkVariant(destination: Destination) {
-  const labels = [
+function getModelType(destination: Destination) {
+  const text = [
     destination.name,
+    destination.region,
+    destination.tagline,
     ...destination.tags,
     ...destination.culturalHighlights,
     ...destination.foodHighlights,
@@ -591,576 +508,127 @@ function getLandmarkVariant(destination: Destination) {
     .join(" ")
     .toLowerCase();
 
-  if (labels.includes("beach") || labels.includes("nightlife") || labels.includes("coastal")) {
-    return "coastal";
+  if (text.includes("beach") || text.includes("coast") || text.includes("sea")) {
+    return "coast";
   }
 
-  if (labels.includes("spiritual") || labels.includes("temple") || labels.includes("ritual")) {
+  if (text.includes("temple") || text.includes("spiritual") || text.includes("ghat")) {
     return "temple";
   }
 
   return "fort";
 }
 
-function EarthMapGrid({ quality }: { quality: TravelGlobeQuality }) {
-  const latitudeLines = useMemo(() => [-60, -30, 0, 30, 60], []);
-  const longitudeLines = useMemo(
-    () =>
-      quality === "full"
-        ? [-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150]
-        : [-120, -60, 0, 60, 120],
-    [quality],
-  );
+function distanceFromIndia(lat: number, lng: number) {
+  const earthRadiusKm = 6371;
+  const latDistance = toRadians(lat - INDIA_CENTER.lat);
+  const lngDistance = toRadians(lng - INDIA_CENTER.lng);
+  const startLat = toRadians(INDIA_CENTER.lat);
+  const endLat = toRadians(lat);
+  const a =
+    Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
+    Math.cos(startLat) * Math.cos(endLat) * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
+  return earthRadiusKm * c;
+}
+
+function toRadians(value: number) {
+  return value * (Math.PI / 180);
+}
+
+function WebGlFallback({
+  destinations,
+  onSelectDestination,
+  selectedSlug,
+}: Pick<TravelGlobeProps, "destinations" | "onSelectDestination" | "selectedSlug">) {
   return (
-    <group>
-      {latitudeLines.map((lat) => (
-        <Line
-          color={lat === 0 ? "#9dfbed" : "#ffffff"}
-          key={`lat-${lat}`}
-          lineWidth={lat === 0 ? 0.55 : 0.34}
-          opacity={lat === 0 ? 0.08 : 0.04}
-          points={createLatitudePoints(lat)}
-          transparent
-        />
-      ))}
-      {longitudeLines.map((lng) => (
-        <Line
-          color="#9dfbed"
-          key={`lng-${lng}`}
-          lineWidth={0.28}
-          opacity={0.035}
-          points={createLongitudePoints(lng)}
-          transparent
-        />
-      ))}
-    </group>
-  );
-}
-
-function UniverseBackdrop({
-  quality,
-  reducedMotion,
-}: {
-  quality: TravelGlobeQuality;
-  reducedMotion: boolean;
-}) {
-  const galaxyRef = useRef<Group>(null);
-  const elapsedRef = useRef(0);
-
-  useFrame((_, delta) => {
-    elapsedRef.current += delta;
-
-    if (!galaxyRef.current || reducedMotion) {
-      return;
-    }
-
-    galaxyRef.current.rotation.y += delta * 0.012;
-    galaxyRef.current.rotation.z = Math.sin(elapsedRef.current * 0.08) * 0.018;
-  });
-
-  return (
-    <group ref={galaxyRef}>
-      <mesh position={[-5.8, 2.7, -7.4]}>
-        <sphereGeometry args={[quality === "full" ? 3.6 : 2.7, 32, 32]} />
-        <meshBasicMaterial
-          blending={AdditiveBlending}
-          color="#234bff"
-          depthWrite={false}
-          opacity={0.16}
-          side={BackSide}
-          transparent
-        />
-      </mesh>
-      <mesh position={[5.3, -2.9, -8.2]}>
-        <sphereGeometry args={[quality === "full" ? 3.2 : 2.2, 32, 32]} />
-        <meshBasicMaterial
-          blending={AdditiveBlending}
-          color="#ff7d66"
-          depthWrite={false}
-          opacity={0.13}
-          side={BackSide}
-          transparent
-        />
-      </mesh>
-      <mesh position={[0.4, 4.1, -10.4]}>
-        <sphereGeometry args={[quality === "full" ? 4.4 : 3.1, 32, 32]} />
-        <meshBasicMaterial
-          blending={AdditiveBlending}
-          color="#35f6cf"
-          depthWrite={false}
-          opacity={0.1}
-          side={BackSide}
-          transparent
-        />
-      </mesh>
-      <mesh rotation={[1.08, 0.18, -0.64]}>
-        <torusGeometry args={[6.2, 0.018, 12, quality === "full" ? 220 : 120]} />
-        <meshBasicMaterial color="#9dfbed" opacity={0.18} transparent />
-      </mesh>
-      <mesh rotation={[1.22, -0.25, -0.52]}>
-        <torusGeometry args={[7.4, 0.012, 12, quality === "full" ? 220 : 120]} />
-        <meshBasicMaterial color="#ffe38a" opacity={0.1} transparent />
-      </mesh>
-    </group>
-  );
-}
-
-function createLatitudePoints(lat: number) {
-  const points: Vector3[] = [];
-
-  for (let lng = -180; lng <= 180; lng += 4) {
-    points.push(coordinateToVector(lat, lng, GLOBE_RADIUS + 0.035));
-  }
-
-  return points;
-}
-
-function createLongitudePoints(lng: number) {
-  const points: Vector3[] = [];
-
-  for (let lat = -82; lat <= 82; lat += 4) {
-    points.push(coordinateToVector(lat, lng, GLOBE_RADIUS + 0.036));
-  }
-
-  return points;
-}
-
-function createEarthTexture(quality: TravelGlobeQuality) {
-  const { canvas, context } = createTextureCanvas(quality);
-  const width = canvas.width;
-  const height = canvas.height;
-  const oceanGradient = context.createLinearGradient(0, 0, width, height);
-  oceanGradient.addColorStop(0, "#020711");
-  oceanGradient.addColorStop(0.34, "#051426");
-  oceanGradient.addColorStop(0.56, "#071b2d");
-  oceanGradient.addColorStop(0.78, "#030a16");
-  oceanGradient.addColorStop(1, "#00030a");
-
-  context.fillStyle = oceanGradient;
-  context.fillRect(0, 0, width, height);
-
-  drawEarthVignette(context, width, height);
-  drawOceanTexture(context, width, height);
-  drawLandmasses(context, width, height);
-  drawIndiaFocus(context, width, height);
-  drawNightLights(context, width, height);
-  drawEarthScanlines(context, width, height);
-
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.needsUpdate = true;
-
-  return texture;
-}
-
-function createEarthBumpTexture(quality: TravelGlobeQuality) {
-  const { canvas, context } = createTextureCanvas(quality);
-  const width = canvas.width;
-  const height = canvas.height;
-
-  context.fillStyle = "#111111";
-  context.fillRect(0, 0, width, height);
-
-  context.fillStyle = "#707070";
-  LANDMASSES.forEach((landmass) => drawPolygon(context, landmass, width, height, true));
-
-  context.fillStyle = "#9c9c9c";
-  drawPolygon(context, INDIA_OUTLINE, width, height, true);
-
-  const texture = new CanvasTexture(canvas);
-  texture.needsUpdate = true;
-
-  return texture;
-}
-
-function createCloudTexture(quality: TravelGlobeQuality) {
-  const { canvas, context } = createTextureCanvas(quality);
-  const width = canvas.width;
-  const height = canvas.height;
-
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = "rgba(170,225,255,0.18)";
-
-  const cloudBands = [
-    { lat: 42, offset: 0.04, size: 0.12 },
-    { lat: 16, offset: 0.18, size: 0.09 },
-    { lat: -8, offset: 0.32, size: 0.11 },
-    { lat: -38, offset: 0.12, size: 0.1 },
-  ];
-
-  cloudBands.forEach((band, bandIndex) => {
-    for (let index = 0; index < 13; index += 1) {
-      const lng = -176 + index * 30 + bandIndex * 8;
-      const lat = band.lat + Math.sin(index * 1.7 + bandIndex) * 8;
-      const point = projectMapPoint(lng, lat, width, height);
-      context.beginPath();
-      context.ellipse(
-        point.x,
-        point.y,
-        width * band.size * (0.75 + (index % 3) * 0.12),
-        height * 0.022,
-        Math.sin(index + bandIndex) * 0.42,
-        0,
-        Math.PI * 2,
-      );
-      context.fill();
-    }
-  });
-
-  const texture = new CanvasTexture(canvas);
-  texture.needsUpdate = true;
-
-  return texture;
-}
-
-function createTextureCanvas(quality: TravelGlobeQuality) {
-  const canvas = document.createElement("canvas");
-  canvas.width = quality === "full" ? 1024 : 768;
-  canvas.height = canvas.width / 2;
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    throw new Error("Unable to create Earth texture canvas context");
-  }
-
-  return { canvas, context };
-}
-
-function drawEarthVignette(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  const glow = context.createRadialGradient(
-    width * 0.56,
-    height * 0.44,
-    width * 0.04,
-    width * 0.56,
-    height * 0.44,
-    width * 0.7,
-  );
-  glow.addColorStop(0, "rgba(35,137,189,0.3)");
-  glow.addColorStop(0.42, "rgba(11,49,82,0.18)");
-  glow.addColorStop(0.78, "rgba(1,5,12,0.16)");
-  glow.addColorStop(1, "rgba(0,0,0,0.6)");
-  context.fillStyle = glow;
-  context.fillRect(0, 0, width, height);
-  context.restore();
-}
-
-function drawOceanTexture(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  context.globalAlpha = 0.18;
-  context.strokeStyle = "#2a89c0";
-  context.lineWidth = Math.max(0.8, width * 0.00045);
-
-  for (let index = 0; index < 30; index += 1) {
-    context.beginPath();
-    const y = (height / 30) * index + Math.sin(index * 1.8) * height * 0.01;
-
-    for (let x = 0; x <= width; x += 34) {
-      const waveY = y + Math.sin(x * 0.016 + index) * height * 0.006;
-
-      if (x === 0) {
-        context.moveTo(x, waveY);
-      } else {
-        context.lineTo(x, waveY);
-      }
-    }
-
-    context.stroke();
-  }
-
-  context.restore();
-}
-
-function drawLandmasses(context: CanvasRenderingContext2D, width: number, height: number) {
-  LANDMASSES.forEach((landmass) => {
-    context.fillStyle = "rgba(4, 13, 21, 0.72)";
-    context.strokeStyle = "rgba(116, 223, 255, 0.34)";
-    context.lineWidth = Math.max(1, width * 0.0009);
-    drawPolygon(context, landmass, width, height, true);
-    context.stroke();
-  });
-
-  drawLandHalftone(context, width, height);
-  drawCoastlineGlow(context, width, height);
-}
-
-function drawIndiaFocus(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  context.fillStyle = "rgba(248, 213, 106, 0.12)";
-  context.strokeStyle = "rgba(255, 232, 126, 0.62)";
-  context.lineWidth = Math.max(1.2, width * 0.0009);
-  drawPolygon(context, INDIA_OUTLINE, width, height, true);
-  context.stroke();
-  context.restore();
-}
-
-function drawNightLights(context: CanvasRenderingContext2D, width: number, height: number) {
-  const lightPoints: GeoPoint[] = [
-    [-74, 41],
-    [-118, 34],
-    [-0.1, 51.5],
-    [2.3, 48.8],
-    [31, 30],
-    [77.2, 28.6],
-    [72.8, 19.1],
-    [75.8, 26.9],
-    [88.4, 22.6],
-    [139.7, 35.7],
-    [103.8, 1.3],
-  ];
-
-  context.save();
-  lightPoints.forEach(([lng, lat], index) => {
-    const point = projectMapPoint(lng, lat, width, height);
-    const radius = width * (0.0014 + (index % 3) * 0.0003);
-    const glow = context.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius * 5);
-    glow.addColorStop(0, "rgba(255,236,160,0.75)");
-    glow.addColorStop(0.35, "rgba(255,172,93,0.22)");
-    glow.addColorStop(1, "rgba(255,172,93,0)");
-    context.fillStyle = glow;
-    context.beginPath();
-    context.arc(point.x, point.y, radius * 5, 0, Math.PI * 2);
-    context.fill();
-  });
-  context.restore();
-}
-
-function drawLandHalftone(context: CanvasRenderingContext2D, width: number, height: number) {
-  const step = Math.max(6, Math.round(width * 0.0078));
-  const baseRadius = Math.max(1.2, width * 0.00135);
-
-  context.save();
-  context.globalCompositeOperation = "lighter";
-
-  for (let y = step; y < height - step; y += step) {
-    const offset = Math.floor(y / step) % 2 === 0 ? step * 0.5 : 0;
-
-    for (let x = step + offset; x < width - step; x += step) {
-      const lng = (x / width) * 360 - 180;
-      const lat = 90 - (y / height) * 180;
-
-      if (!isLandPoint(lng, lat)) {
-        continue;
-      }
-
-      const daySide = 0.42 + 0.58 * Math.max(0, Math.cos(((lng + 52) * Math.PI) / 180));
-      const latitudeFade = 0.58 + 0.42 * Math.cos((Math.abs(lat) * Math.PI) / 180);
-      const shimmer = 0.82 + 0.18 * Math.sin(x * 0.037 + y * 0.018);
-      const alpha = Math.min(0.92, 0.24 + daySide * latitudeFade * shimmer * 0.58);
-      const radius = baseRadius * (0.74 + daySide * 0.56);
-
-      context.fillStyle = `rgba(165, 229, 255, ${alpha})`;
-      context.beginPath();
-      context.arc(x, y, radius, 0, Math.PI * 2);
-      context.fill();
-
-      if (daySide > 0.78) {
-        context.fillStyle = `rgba(209, 255, 129, ${(daySide - 0.78) * 0.44})`;
-        context.beginPath();
-        context.arc(x + radius * 0.35, y - radius * 0.25, radius * 0.92, 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-  }
-
-  context.restore();
-}
-
-function drawCoastlineGlow(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  context.globalCompositeOperation = "lighter";
-
-  LANDMASSES.forEach((landmass) => {
-    context.strokeStyle = "rgba(137, 232, 255, 0.38)";
-    context.lineWidth = Math.max(1.2, width * 0.0009);
-    drawPath(context, landmass, width, height, true);
-    context.stroke();
-
-    context.strokeStyle = "rgba(200, 255, 111, 0.14)";
-    context.lineWidth = Math.max(2.6, width * 0.0022);
-    drawPath(context, landmass, width, height, true);
-    context.stroke();
-  });
-
-  context.restore();
-}
-
-function drawEarthScanlines(context: CanvasRenderingContext2D, width: number, height: number) {
-  context.save();
-  context.globalCompositeOperation = "screen";
-  context.strokeStyle = "rgba(157,251,237,0.07)";
-  context.lineWidth = Math.max(0.8, width * 0.00035);
-
-  for (let y = 0; y <= height; y += Math.max(5, width * 0.006)) {
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(width, y);
-    context.stroke();
-  }
-
-  context.restore();
-}
-
-function isLandPoint(lng: number, lat: number) {
-  return LANDMASSES.some((landmass) => pointInPolygon(lng, lat, landmass));
-}
-
-function pointInPolygon(lng: number, lat: number, polygon: GeoPoint[]) {
-  let isInside = false;
-
-  for (
-    let index = 0, previousIndex = polygon.length - 1;
-    index < polygon.length;
-    previousIndex = index
-  ) {
-    const [lngA, latA] = polygon[index];
-    const [lngB, latB] = polygon[previousIndex];
-    const intersects =
-      latA > lat !== latB > lat &&
-      lng < ((lngB - lngA) * (lat - latA)) / (latB - latA || Number.EPSILON) + lngA;
-
-    if (intersects) {
-      isInside = !isInside;
-    }
-  }
-
-  return isInside;
-}
-
-function drawPath(
-  context: CanvasRenderingContext2D,
-  points: GeoPoint[],
-  width: number,
-  height: number,
-  closePath: boolean,
-) {
-  context.beginPath();
-
-  points.forEach(([lng, lat], index) => {
-    const point = projectMapPoint(lng, lat, width, height);
-
-    if (index === 0) {
-      context.moveTo(point.x, point.y);
-      return;
-    }
-
-    context.lineTo(point.x, point.y);
-  });
-
-  if (closePath) {
-    context.closePath();
-  }
-}
-
-function drawPolygon(
-  context: CanvasRenderingContext2D,
-  points: GeoPoint[],
-  width: number,
-  height: number,
-  closePath: boolean,
-) {
-  drawPath(context, points, width, height, closePath);
-  context.fill();
-}
-
-function projectMapPoint(lng: number, lat: number, width: number, height: number) {
-  return {
-    x: ((lng + 180) / 360) * width,
-    y: ((90 - lat) / 180) * height,
-  };
-}
-
-function SceneLoadingHud() {
-  const { progress } = useProgress();
-  const roundedProgress = Math.round(progress);
-
-  return (
-    <Html center>
-      <div className="rounded-3xl border border-teal-100/15 bg-slate-950/80 px-5 py-4 text-center text-white shadow-2xl shadow-teal-950/40 backdrop-blur-xl">
-        <div className="mx-auto mb-3 h-14 w-14 animate-pulse rounded-full border border-teal-200/50" />
-        <p className="text-[0.65rem] font-black uppercase tracking-[0.24em] text-teal-100">
-          Building scene
+    <div className="pointer-events-auto flex h-full min-h-[520px] items-center justify-center p-6">
+      <div className="max-w-sm rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl">
+        <p className="text-xs font-black uppercase tracking-[0.28em] text-teal-200">Smooth mode</p>
+        <h2 className="mt-3 text-3xl font-black leading-tight">3D globe paused</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
+          Browser ne WebGL context stop kiya. Aap destinations select kar sakte ho; 3D ke bina page
+          smooth rahega.
         </p>
-        <p className="mt-1 text-sm font-black text-white">{roundedProgress}%</p>
+        <div className="mt-5 grid gap-2">
+          {destinations.slice(0, 4).map((destination) => (
+            <button
+              className={[
+                "rounded-2xl border px-4 py-3 text-left text-sm font-bold transition",
+                destination.slug === selectedSlug
+                  ? "border-teal-200/60 bg-teal-200/15 text-teal-100"
+                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]",
+              ].join(" ")}
+              key={destination.slug}
+              onClick={() => onSelectDestination(destination.slug)}
+              type="button"
+            >
+              {destination.name}
+            </button>
+          ))}
+        </div>
       </div>
-    </Html>
+    </div>
   );
 }
 
 export function TravelGlobe({
   destinations,
   onSelectDestination,
-  quality = "full",
+  quality = "balanced",
   reducedMotion = false,
   selectedSlug,
 }: TravelGlobeProps) {
-  const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [hasWebGlFailed, setHasWebGlFailed] = useState(false);
+  const starCount = quality === "full" ? 900 : 360;
 
   if (hasWebGlFailed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
-        <div className="max-w-sm rounded-[2rem] border border-teal-100/15 bg-white/[0.06] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl">
-          <div className="mx-auto mb-4 h-20 w-20 rounded-full border border-teal-200/40 bg-[radial-gradient(circle,rgba(45,255,209,0.28),transparent_62%)]" />
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-100">
-            Safe visual mode
-          </p>
-          <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">3D scene paused</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-300">
-            Browser ne WebGL context reset kiya. Page usable rahega; tum 3D scene dobara try kar
-            sakte ho.
-          </p>
-          <button
-            className="mt-5 rounded-full bg-teal-200 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-white"
-            onClick={() => setHasWebGlFailed(false)}
-            type="button"
-          >
-            Try 3D again
-          </button>
-        </div>
-      </div>
+      <WebGlFallback
+        destinations={destinations}
+        onSelectDestination={onSelectDestination}
+        selectedSlug={selectedSlug}
+      />
     );
   }
 
   return (
-    <Canvas
-      camera={{ fov: 38, position: [0.15, 0.28, 5.3] }}
-      className="cursor-grab active:cursor-grabbing"
-      dpr={quality === "full" ? [1, 1.25] : [1, 1]}
-      frameloop={reducedMotion ? "demand" : "always"}
-      gl={{
-        antialias: false,
-        powerPreference: quality === "full" ? "high-performance" : "low-power",
-      }}
-      onCreated={({ gl }) => {
-        const canvas = gl.domElement;
-        const handleContextLost = (event: Event) => {
-          event.preventDefault();
-          setHasWebGlFailed(true);
-        };
-
-        canvas.addEventListener("webglcontextlost", handleContextLost, false);
-      }}
-      performance={{ min: 0.55 }}
-    >
-      <color args={["#030712"]} attach="background" />
-      <fog args={["#030712", 8, 16]} attach="fog" />
-      <ambientLight intensity={0.36} />
-      <directionalLight color="#fff7dc" intensity={3.4} position={[4.8, 3.6, 5.2]} />
-      <pointLight color="#35f6cf" intensity={2.2} position={[-4.2, 1.8, 3.8]} />
-      <pointLight color="#6a8bff" intensity={1.9} position={[2.8, -3.2, 3.1]} />
-      <UniverseBackdrop quality={quality} reducedMotion={reducedMotion} />
-      <Stars
-        count={quality === "full" ? 2400 : 900}
-        depth={64}
-        factor={5.2}
-        fade
-        radius={80}
-        saturation={0.55}
-        speed={reducedMotion ? 0 : 0.22}
-      />
-      <Suspense fallback={<SceneLoadingHud />}>
+    <div className="pointer-events-auto h-full min-h-[560px] cursor-grab active:cursor-grabbing">
+      <Canvas
+        camera={{ fov: 46, position: [0, 0.15, 5.35] }}
+        dpr={quality === "full" ? [1, 1.15] : [1, 1]}
+        frameloop={reducedMotion ? "demand" : "always"}
+        gl={{
+          alpha: true,
+          antialias: false,
+          powerPreference: "default",
+          stencil: false,
+        }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener(
+            "webglcontextlost",
+            (event) => {
+              event.preventDefault();
+              setHasWebGlFailed(true);
+            },
+            { once: true },
+          );
+        }}
+      >
+        <color args={["#030712"]} attach="background" />
+        <ambientLight intensity={0.75} />
+        <directionalLight color="#dffcff" intensity={1.7} position={[3, 3.5, 4]} />
+        <pointLight color="#5eead4" intensity={1.4} position={[-3, -1.2, 3]} />
+        <Stars
+          count={starCount}
+          depth={42}
+          factor={quality === "full" ? 3.8 : 2.7}
+          fade
+          radius={34}
+          saturation={0}
+          speed={reducedMotion ? 0 : 0.35}
+        />
         <GlobeCore
           destinations={destinations}
           onSelectDestination={onSelectDestination}
@@ -1168,25 +636,18 @@ export function TravelGlobe({
           reducedMotion={reducedMotion}
           selectedSlug={selectedSlug}
         />
-      </Suspense>
-      <OrbitControls
-        autoRotate={!reducedMotion && !isUserInteracting}
-        autoRotateSpeed={quality === "full" ? 0.34 : 0.18}
-        enableDamping
-        enablePan={false}
-        enableRotate
-        enableZoom
-        maxPolarAngle={Math.PI * 0.72}
-        maxDistance={6.35}
-        minDistance={3.55}
-        minPolarAngle={Math.PI * 0.28}
-        onEnd={() => {
-          window.setTimeout(() => setIsUserInteracting(false), 900);
-        }}
-        onStart={() => setIsUserInteracting(true)}
-        rotateSpeed={0.58}
-        zoomSpeed={0.42}
-      />
-    </Canvas>
+        <OrbitControls
+          autoRotate={false}
+          enableDamping={!reducedMotion}
+          enablePan={false}
+          enableRotate
+          enableZoom
+          maxDistance={6.6}
+          minDistance={3.35}
+          rotateSpeed={0.7}
+          zoomSpeed={0.55}
+        />
+      </Canvas>
+    </div>
   );
 }

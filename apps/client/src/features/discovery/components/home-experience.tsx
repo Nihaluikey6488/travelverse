@@ -31,10 +31,12 @@ const featurePills = [
 export function HomeExperience() {
   const [query, setQuery] = useState("");
   const [selectedSlug, setSelectedSlug] = useState(sampleDestinations[0]?.slug ?? "");
+  const [isThreeSceneEnabled, setIsThreeSceneEnabled] = useState(false);
   const scenePreferences = useScenePreferences();
   const { scrollYProgress } = useScroll();
   const globeOpacity = useTransform(scrollYProgress, [0, 0.55, 1], [1, 0.78, 0.52]);
   const globeScale = useTransform(scrollYProgress, [0, 0.65], [1, 0.92]);
+  const canUseThreeScene = scenePreferences.hasHydrated && !scenePreferences.shouldUseFallback;
 
   const destinations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -81,11 +83,15 @@ export function HomeExperience() {
       >
         {!scenePreferences.hasHydrated ? (
           <GlobeLoadingShell label="Preparing visual mode" />
-        ) : scenePreferences.shouldUseFallback ? (
+        ) : scenePreferences.shouldUseFallback || !isThreeSceneEnabled ? (
           <GlobeFallback
             destinations={sampleDestinations}
             onSelectDestination={selectDestination}
-            reason={scenePreferences.fallbackReason}
+            reason={
+              scenePreferences.shouldUseFallback
+                ? scenePreferences.fallbackReason
+                : "3D Earth paused for smooth loading"
+            }
             reduceMotion={scenePreferences.prefersReducedMotion}
             selectedSlug={selectedSlug}
           />
@@ -187,6 +193,26 @@ export function HomeExperience() {
                   {label}
                 </button>
               ))}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                className={[
+                  "inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-black shadow-2xl shadow-black/30 transition",
+                  canUseThreeScene
+                    ? "bg-teal-200 text-slate-950 hover:-translate-y-1 hover:bg-white"
+                    : "cursor-not-allowed border border-white/10 bg-white/[0.06] text-slate-400",
+                ].join(" ")}
+                disabled={!canUseThreeScene}
+                onClick={() => setIsThreeSceneEnabled((currentValue) => !currentValue)}
+                type="button"
+              >
+                <HydrationSafeIcon className="h-4 w-4" icon={Compass} />
+                {isThreeSceneEnabled ? "Pause 3D Earth" : "Launch 3D Earth"}
+              </button>
+              <p className="max-w-sm text-xs leading-5 text-slate-400">
+                Page smooth rahe isliye heavy WebGL globe click ke baad load hota hai.
+              </p>
             </div>
           </motion.div>
 
