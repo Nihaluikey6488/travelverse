@@ -8,6 +8,7 @@ import { DestinationsModule } from "./modules/destinations/destinations.module";
 import { FavouritesModule } from "./modules/favourites/favourites.module";
 import { HealthModule } from "./modules/health/health.module";
 import { RoutesModule } from "./modules/routes/routes.module";
+import { TransportModule } from "./modules/transport/transport.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { RoutesModule } from "./modules/routes/routes.module";
     DestinationsModule,
     FavouritesModule,
     RoutesModule,
+    TransportModule,
   ],
   providers: [
     {

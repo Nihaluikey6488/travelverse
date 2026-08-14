@@ -117,16 +117,9 @@ export class DestinationsService {
     const page = query.page;
     const limit = query.limit;
     const filter = this.buildFilter(query);
-    const projection = query.search
-      ? {
-          score: {
-            $meta: "textScore",
-          },
-        }
-      : undefined;
 
     const [destinations, total] = await Promise.all([
-      this.applySort(this.destinationModel.find(filter, projection), Boolean(query.search))
+      this.applySort(this.destinationModel.find(filter))
         .skip((page - 1) * limit)
         .limit(limit)
         .lean<DestinationRecord[]>()
@@ -226,10 +219,12 @@ export class DestinationsService {
       });
     }
 
-    if (query.search) {
-      filter.$text = {
-        $search: query.search,
-      };
+    const searchFilters = this.buildSearchFilters(query.search);
+
+    if (searchFilters.length > 0) {
+      andFilters.push({
+        $or: searchFilters,
+      });
     }
 
     if (andFilters.length > 0) {
@@ -269,18 +264,70 @@ export class DestinationsService {
     ];
   }
 
-  private applySort(
-    query: ReturnType<Model<DestinationDocument>["find"]>,
-    hasSearch: boolean,
-  ): ReturnType<Model<DestinationDocument>["find"]> {
-    if (hasSearch) {
-      return query.sort({
-        score: {
-          $meta: "textScore",
-        },
-      });
+  private buildSearchFilters(value?: string): DestinationFilter[] {
+    const normalizedValue = value?.trim().slice(0, 80);
+
+    if (!normalizedValue) {
+      return [];
     }
 
+    const regex = new RegExp(escapeRegex(normalizedValue), "i");
+
+    return [
+      {
+        name: regex,
+      },
+      {
+        slug: regex,
+      },
+      {
+        region: regex,
+      },
+      {
+        country: regex,
+      },
+      {
+        tagline: regex,
+      },
+      {
+        summary: regex,
+      },
+      {
+        tags: regex,
+      },
+      {
+        culturalHighlights: regex,
+      },
+      {
+        foodHighlights: regex,
+      },
+      {
+        danceAndArts: regex,
+      },
+      {
+        festivals: regex,
+      },
+      {
+        "sections.title": regex,
+      },
+      {
+        "sections.body": regex,
+      },
+      {
+        "attractions.name": regex,
+      },
+      {
+        "attractions.summary": regex,
+      },
+      {
+        "attractions.tags": regex,
+      },
+    ];
+  }
+
+  private applySort(
+    query: ReturnType<Model<DestinationDocument>["find"]>,
+  ): ReturnType<Model<DestinationDocument>["find"]> {
     return query.sort({
       name: 1,
     });
@@ -337,4 +384,8 @@ export class DestinationsService {
       (first, second) => first.localeCompare(second),
     );
   }
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
