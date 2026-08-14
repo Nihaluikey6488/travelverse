@@ -171,10 +171,16 @@ export function ExploreExperience() {
             <Link className="rounded-full px-4 py-2 hover:bg-white/10 hover:text-white" href="/">
               Home
             </Link>
-            <Link className="rounded-full px-4 py-2 hover:bg-white/10 hover:text-white" href="/account">
+            <Link
+              className="rounded-full px-4 py-2 hover:bg-white/10 hover:text-white"
+              href="/account"
+            >
               Account
             </Link>
-            <Link className="rounded-full px-4 py-2 hover:bg-white/10 hover:text-white" href="/admin">
+            <Link
+              className="rounded-full px-4 py-2 hover:bg-white/10 hover:text-white"
+              href="/admin"
+            >
               Admin
             </Link>
           </nav>
@@ -193,8 +199,8 @@ export function ExploreExperience() {
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
-              Find destinations by region, activity, category, local food and cultural story.
-              Login only when you want to save favourites.
+              Find destinations by region, activity, category, local food and cultural story. Login
+              only when you want to save favourites.
             </p>
           </div>
 
@@ -270,7 +276,9 @@ export function ExploreExperience() {
                 Published atlas
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-[-0.05em]">
-                {meta ? `${meta.total} destination${meta.total === 1 ? "" : "s"} found` : "Loading destinations"}
+                {meta
+                  ? `${meta.total} destination${meta.total === 1 ? "" : "s"} found`
+                  : "Loading destinations"}
               </h2>
             </div>
             {meta ? (
@@ -304,18 +312,26 @@ export function ExploreExperience() {
           {!isLoading && destinations.length === 0 ? (
             <div className="rounded-[2.2rem] border border-white/10 bg-white/[0.06] p-10 text-center shadow-2xl shadow-black/25">
               <HydrationSafeIcon className="mx-auto h-10 w-10 text-teal-200" icon={Compass} />
-              <h3 className="mt-4 text-2xl font-black">No destination found</h3>
+              <h3 className="mt-4 text-2xl font-black">No published destination found</h3>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-300">
-                Try removing one filter or search something broader like food, history, beach or
-                culture.
+                Explore searches only published atlas data. Try Jaipur, Goa, Varanasi, food, history
+                or beach — or import a new city from the admin workspace first.
               </p>
-              <button
-                className="mt-5 rounded-full bg-teal-300 px-5 py-3 text-sm font-black text-slate-950"
-                onClick={resetFilters}
-                type="button"
-              >
-                Clear search
-              </button>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <button
+                  className="rounded-full bg-teal-300 px-5 py-3 text-sm font-black text-slate-950"
+                  onClick={resetFilters}
+                  type="button"
+                >
+                  Clear search
+                </button>
+                <Link
+                  className="rounded-full border border-white/10 px-5 py-3 text-sm font-black text-white transition hover:border-teal-200/50 hover:bg-teal-200/10"
+                  href="/admin/destinations"
+                >
+                  Import new city
+                </Link>
+              </div>
             </div>
           ) : null}
 
@@ -403,7 +419,9 @@ function DestinationExploreCard({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
         <button
-          aria-label={isFavourite ? `Remove ${destination.name} from favourites` : `Save ${destination.name}`}
+          aria-label={
+            isFavourite ? `Remove ${destination.name} from favourites` : `Save ${destination.name}`
+          }
           className={`absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full border backdrop-blur-xl transition ${
             isFavourite
               ? "border-rose-200/60 bg-rose-300 text-slate-950"
@@ -412,7 +430,10 @@ function DestinationExploreCard({
           onClick={() => onToggleFavourite(destination.slug)}
           type="button"
         >
-          <HydrationSafeIcon className={isFavourite ? "h-5 w-5 fill-current" : "h-5 w-5"} icon={Heart} />
+          <HydrationSafeIcon
+            className={isFavourite ? "h-5 w-5 fill-current" : "h-5 w-5"}
+            icon={Heart}
+          />
         </button>
         <div className="absolute bottom-5 left-5 right-5">
           <p className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-teal-100 backdrop-blur-md">

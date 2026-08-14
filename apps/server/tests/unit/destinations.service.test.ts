@@ -62,10 +62,47 @@ describe("DestinationsService", () => {
       page: 1,
     });
 
-    expect(model.find).toHaveBeenCalledWith({ status: "PUBLISHED" }, undefined);
+    expect(model.find).toHaveBeenCalledWith({ status: "PUBLISHED" });
     expect(model.countDocuments).toHaveBeenCalledWith({ status: "PUBLISHED" });
     expect(response.meta.total).toBe(1);
     expect(response.data[0]?.slug).toBe("jaipur");
+  });
+
+  it("builds partial search filters across destination fields", async () => {
+    const findChain = makeLeanChain([makeDestinationRecord()]);
+    const countExec = vi.fn().mockResolvedValue(1);
+    const model = {
+      countDocuments: vi.fn().mockReturnValue({ exec: countExec }),
+      find: vi.fn().mockReturnValue(findChain),
+    };
+    const service = makeService(model);
+
+    await service.findPublished({
+      limit: 12,
+      page: 1,
+      search: "jai",
+    });
+
+    const filter = model.find.mock.calls[0]?.[0] as {
+      $and?: Array<{ $or?: Array<Record<string, RegExp>> }>;
+      status?: string;
+    };
+
+    expect(filter.status).toBe("PUBLISHED");
+    expect(filter.$and?.[0]?.$or).toEqual(
+      expect.arrayContaining([
+        {
+          name: expect.any(RegExp),
+        },
+        {
+          foodHighlights: expect.any(RegExp),
+        },
+        {
+          "attractions.name": expect.any(RegExp),
+        },
+      ]),
+    );
+    expect(filter.$and?.[0]?.$or?.[0]?.name.test("Jaipur")).toBe(true);
   });
 
   it("creates admin drafts by default", async () => {
