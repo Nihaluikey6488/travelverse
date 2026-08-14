@@ -18,6 +18,125 @@ export const transportEstimateSchema = z.object({
   isLivePrice: z.boolean(),
 });
 
+export const transportPriceSourceSchema = z.enum(["LIVE", "SANDBOX", "ESTIMATED"]);
+
+export const transportProviderContractSchema = z.object({
+  mode: transportModeSchema,
+  notes: z.string(),
+  providerName: z.string(),
+  source: transportPriceSourceSchema,
+  supportsLivePricing: z.boolean(),
+});
+
+export const travellerGroupSchema = z
+  .object({
+    adults: z.coerce.number().int().min(1).max(9).default(1),
+    children: z.coerce.number().int().min(0).max(9).default(0),
+  })
+  .refine((travellers) => travellers.adults + travellers.children > 0, {
+    message: "At least one traveller is required",
+  });
+
+const travelDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD date format");
+
+export const transportComparisonRequestSchema = z
+  .object({
+    currency: z.enum(["INR"]).default("INR"),
+    departureDate: travelDateSchema,
+    destination: z.string().trim().min(2).max(120),
+    origin: z.string().trim().min(2).max(120),
+    returnDate: travelDateSchema.optional(),
+    travellers: travellerGroupSchema.default({ adults: 1, children: 0 }),
+  })
+  .superRefine((request, context) => {
+    if (!isValidDateInput(request.departureDate)) {
+      context.addIssue({
+        code: "custom",
+        message: "Departure date is not valid",
+        path: ["departureDate"],
+      });
+    }
+
+    if (request.returnDate && !isValidDateInput(request.returnDate)) {
+      context.addIssue({
+        code: "custom",
+        message: "Return date is not valid",
+        path: ["returnDate"],
+      });
+    }
+
+    if (
+      request.returnDate &&
+      isValidDateInput(request.departureDate) &&
+      isValidDateInput(request.returnDate) &&
+      dateInputToUtc(request.returnDate) < dateInputToUtc(request.departureDate)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Return date cannot be before departure date",
+        path: ["returnDate"],
+      });
+    }
+  });
+
+export const transportCostBreakdownItemSchema = z.object({
+  amountInr: z.number().int().nonnegative(),
+  key: z.string(),
+  label: z.string(),
+  notes: z.string().optional(),
+  source: transportPriceSourceSchema,
+});
+
+export const transportComparisonOptionSchema = z.object({
+  arrivalLabel: z.string(),
+  bookingHint: z.string(),
+  confidence: z.enum(["HIGH", "MEDIUM", "LOW"]),
+  departureLabel: z.string(),
+  distanceKm: z.number().nonnegative(),
+  durationMinutes: z.number().int().positive(),
+  extraCharges: z.array(z.string()),
+  fetchedAt: z.string().datetime(),
+  id: z.string(),
+  mode: transportModeSchema,
+  possibleTaxesInr: z.number().int().nonnegative(),
+  pricePerTravellerInr: z.number().int().nonnegative(),
+  provider: z.string(),
+  source: transportPriceSourceSchema,
+  title: z.string(),
+  totalPriceInr: z.number().int().nonnegative(),
+  warnings: z.array(z.string()),
+});
+
+export const transportComparisonRecommendationSchema = z.object({
+  cheapestOptionId: z.string(),
+  fastestOptionId: z.string(),
+  recommendedOptionId: z.string(),
+});
+
+export const tripCostSummarySchema = z.object({
+  accommodationInr: z.number().int().nonnegative(),
+  attractionTicketsInr: z.number().int().nonnegative(),
+  estimatedTripTotalInr: z.number().int().nonnegative(),
+  foodInr: z.number().int().nonnegative(),
+  localTravelInr: z.number().int().nonnegative(),
+  nights: z.number().int().positive(),
+  taxesAndBufferInr: z.number().int().nonnegative(),
+  transportInr: z.number().int().nonnegative(),
+  travellers: z.number().int().positive(),
+});
+
+export const transportComparisonResponseSchema = z.object({
+  costBreakdown: z.array(transportCostBreakdownItemSchema),
+  currency: z.enum(["INR"]),
+  fetchedAt: z.string().datetime(),
+  options: z.array(transportComparisonOptionSchema),
+  providers: z.array(transportProviderContractSchema),
+  recommendations: transportComparisonRecommendationSchema,
+  request: transportComparisonRequestSchema,
+  totals: tripCostSummarySchema,
+  warnings: z.array(z.string()),
+});
+
 export const routeTravelModeSchema = z.enum(["car", "bike", "walk"]);
 
 export const routeEstimateRequestSchema = z.object({
@@ -106,6 +225,17 @@ export const favouriteSchema = z.object({
 });
 
 export type TransportEstimate = z.infer<typeof transportEstimateSchema>;
+export type TransportPriceSource = z.infer<typeof transportPriceSourceSchema>;
+export type TransportProviderContract = z.infer<typeof transportProviderContractSchema>;
+export type TravellerGroup = z.infer<typeof travellerGroupSchema>;
+export type TransportComparisonRequest = z.infer<typeof transportComparisonRequestSchema>;
+export type TransportCostBreakdownItem = z.infer<typeof transportCostBreakdownItemSchema>;
+export type TransportComparisonOption = z.infer<typeof transportComparisonOptionSchema>;
+export type TransportComparisonRecommendation = z.infer<
+  typeof transportComparisonRecommendationSchema
+>;
+export type TripCostSummary = z.infer<typeof tripCostSummarySchema>;
+export type TransportComparisonResponse = z.infer<typeof transportComparisonResponseSchema>;
 export type RouteTravelMode = z.infer<typeof routeTravelModeSchema>;
 export type RouteEstimateRequest = z.infer<typeof routeEstimateRequestSchema>;
 export type RouteEstimateResponse = z.infer<typeof routeEstimateResponseSchema>;
@@ -116,3 +246,30 @@ export type Itinerary = z.infer<typeof itinerarySchema>;
 export type Booking = z.infer<typeof bookingSchema>;
 export type Review = z.infer<typeof reviewSchema>;
 export type Favourite = z.infer<typeof favouriteSchema>;
+
+function isValidDateInput(value: string): boolean {
+  const timestamp = dateInputToUtc(value);
+
+  return Number.isFinite(timestamp);
+}
+
+function dateInputToUtc(value: string): number {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return Number.NaN;
+  }
+
+  const timestamp = Date.UTC(year, month - 1, day);
+  const date = new Date(timestamp);
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return Number.NaN;
+  }
+
+  return timestamp;
+}
