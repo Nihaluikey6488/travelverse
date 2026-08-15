@@ -18,6 +18,9 @@ export class BookingDocument {
   @Prop({ ref: "HotelDocument", type: MongooseSchema.Types.ObjectId })
   hotelId?: MongooseSchema.Types.ObjectId;
 
+  @Prop({ index: true })
+  roomId?: string;
+
   @Prop({ required: true })
   checkIn!: Date;
 
@@ -43,3 +46,4 @@ export const BookingSchema = SchemaFactory.createForClass(BookingDocument);
 
 BookingSchema.index({ userId: 1, createdAt: -1 });
 BookingSchema.index({ destinationSlug: 1, checkIn: 1, checkOut: 1 });
+BookingSchema.index({ hotelId: 1, roomId: 1, checkIn: 1, checkOut: 1, status: 1 });

@@ -4,9 +4,12 @@ import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { BookingsModule } from "./modules/bookings/bookings.module";
 import { DestinationsModule } from "./modules/destinations/destinations.module";
 import { FavouritesModule } from "./modules/favourites/favourites.module";
 import { HealthModule } from "./modules/health/health.module";
+import { HotelsModule } from "./modules/hotels/hotels.module";
+import { ItinerariesModule } from "./modules/itineraries/itineraries.module";
 import { RoutesModule } from "./modules/routes/routes.module";
 import { TransportModule } from "./modules/transport/transport.module";
 
@@ -27,6 +30,9 @@ import { TransportModule } from "./modules/transport/transport.module";
     AuthModule,
     DestinationsModule,
     FavouritesModule,
+    HotelsModule,
+    ItinerariesModule,
+    BookingsModule,
     RoutesModule,
     TransportModule,
   ],
