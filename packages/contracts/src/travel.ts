@@ -167,14 +167,57 @@ export const roomSchema = z.object({
   amenities: z.array(z.string()),
 });
 
+export const hotelPricingModeSchema = z.enum(["LIVE", "SANDBOX", "ESTIMATED"]);
+
 export const hotelSchema = z.object({
   id: mongoIdSchema,
   destinationSlug: slugSchema,
   name: z.string(),
   address: z.string(),
+  coordinates: coordinatesSchema.optional(),
+  pricingMode: hotelPricingModeSchema.default("ESTIMATED"),
   rating: z.number().min(0).max(5),
   amenities: z.array(z.string()),
   rooms: z.array(roomSchema),
+});
+
+export const hotelSearchQuerySchema = z
+  .object({
+    amenity: z.string().trim().min(1).optional(),
+    checkIn: travelDateSchema,
+    checkOut: travelDateSchema,
+    destinationSlug: slugSchema,
+    guests: z.coerce.number().int().min(1).max(12).default(2),
+    maxPriceInr: z.coerce.number().int().positive().optional(),
+    minRating: z.coerce.number().min(0).max(5).optional(),
+  })
+  .superRefine((query, context) => {
+    addDateRangeIssues(query.checkIn, query.checkOut, context);
+  });
+
+export const hotelAvailabilityRoomSchema = roomSchema.extend({
+  estimatedTotalInr: z.number().int().nonnegative(),
+  isAvailable: z.boolean(),
+  nights: z.number().int().positive(),
+  unavailableReason: z.string().optional(),
+});
+
+export const hotelAvailabilitySchema = hotelSchema.extend({
+  availableRoomCount: z.number().int().nonnegative(),
+  lowestNightlyRateInr: z.number().int().nonnegative(),
+  rooms: z.array(hotelAvailabilityRoomSchema),
+});
+
+export const hotelSearchResponseSchema = z.object({
+  checkIn: travelDateSchema,
+  checkOut: travelDateSchema,
+  currency: z.enum(["INR"]),
+  destinationSlug: slugSchema,
+  fetchedAt: z.string().datetime(),
+  guests: z.number().int().positive(),
+  hotels: z.array(hotelAvailabilitySchema),
+  nights: z.number().int().positive(),
+  warnings: z.array(z.string()),
 });
 
 export const itineraryStopSchema = z.object({
@@ -197,16 +240,58 @@ export const itinerarySchema = z.object({
   estimatedTotalInr: z.number().int().nonnegative(),
 });
 
+export const createItineraryRequestSchema = z.object({
+  destinationSlug: slugSchema,
+  days: z.array(
+    z.object({
+      day: z.number().int().positive(),
+      stops: z.array(itineraryStopSchema).min(1),
+    }),
+  ),
+});
+
+export const itineraryListResponseSchema = z.object({
+  itineraries: z.array(itinerarySchema),
+});
+
 export const bookingSchema = z.object({
   id: mongoIdSchema,
   userId: mongoIdSchema,
   destinationSlug: slugSchema,
   hotelId: mongoIdSchema.optional(),
+  roomId: mongoIdSchema.optional(),
   checkIn: z.string().datetime(),
   checkOut: z.string().datetime(),
   guests: z.number().int().positive(),
   status: bookingStatusSchema,
   estimatedTotalInr: z.number().int().nonnegative(),
+});
+
+export const createBookingRequestSchema = z
+  .object({
+    checkIn: travelDateSchema,
+    checkOut: travelDateSchema,
+    destinationSlug: slugSchema,
+    guests: z.coerce.number().int().min(1).max(12),
+    hotelId: mongoIdSchema,
+    itineraryId: mongoIdSchema.optional(),
+    roomId: mongoIdSchema,
+  })
+  .superRefine((request, context) => {
+    addDateRangeIssues(request.checkIn, request.checkOut, context);
+  });
+
+export const bookingSimulationResponseSchema = z.object({
+  booking: bookingSchema,
+  currency: z.enum(["INR"]),
+  hotel: hotelSchema,
+  nights: z.number().int().positive(),
+  room: roomSchema,
+  warnings: z.array(z.string()),
+});
+
+export const bookingListResponseSchema = z.object({
+  bookings: z.array(bookingSchema),
 });
 
 export const reviewSchema = z.object({
@@ -240,10 +325,20 @@ export type RouteTravelMode = z.infer<typeof routeTravelModeSchema>;
 export type RouteEstimateRequest = z.infer<typeof routeEstimateRequestSchema>;
 export type RouteEstimateResponse = z.infer<typeof routeEstimateResponseSchema>;
 export type Room = z.infer<typeof roomSchema>;
+export type HotelPricingMode = z.infer<typeof hotelPricingModeSchema>;
 export type Hotel = z.infer<typeof hotelSchema>;
+export type HotelSearchQuery = z.infer<typeof hotelSearchQuerySchema>;
+export type HotelAvailabilityRoom = z.infer<typeof hotelAvailabilityRoomSchema>;
+export type HotelAvailability = z.infer<typeof hotelAvailabilitySchema>;
+export type HotelSearchResponse = z.infer<typeof hotelSearchResponseSchema>;
 export type ItineraryStop = z.infer<typeof itineraryStopSchema>;
 export type Itinerary = z.infer<typeof itinerarySchema>;
+export type CreateItineraryRequest = z.infer<typeof createItineraryRequestSchema>;
+export type ItineraryListResponse = z.infer<typeof itineraryListResponseSchema>;
 export type Booking = z.infer<typeof bookingSchema>;
+export type CreateBookingRequest = z.infer<typeof createBookingRequestSchema>;
+export type BookingSimulationResponse = z.infer<typeof bookingSimulationResponseSchema>;
+export type BookingListResponse = z.infer<typeof bookingListResponseSchema>;
 export type Review = z.infer<typeof reviewSchema>;
 export type Favourite = z.infer<typeof favouriteSchema>;
 
@@ -251,6 +346,36 @@ function isValidDateInput(value: string): boolean {
   const timestamp = dateInputToUtc(value);
 
   return Number.isFinite(timestamp);
+}
+
+function addDateRangeIssues(startDate: string, endDate: string, context: z.RefinementCtx): void {
+  if (!isValidDateInput(startDate)) {
+    context.addIssue({
+      code: "custom",
+      message: "Start date is not valid",
+      path: ["checkIn"],
+    });
+  }
+
+  if (!isValidDateInput(endDate)) {
+    context.addIssue({
+      code: "custom",
+      message: "End date is not valid",
+      path: ["checkOut"],
+    });
+  }
+
+  if (
+    isValidDateInput(startDate) &&
+    isValidDateInput(endDate) &&
+    dateInputToUtc(endDate) <= dateInputToUtc(startDate)
+  ) {
+    context.addIssue({
+      code: "custom",
+      message: "End date must be after start date",
+      path: ["checkOut"],
+    });
+  }
 }
 
 function dateInputToUtc(value: string): number {
