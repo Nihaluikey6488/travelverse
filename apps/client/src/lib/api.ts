@@ -1,7 +1,10 @@
 export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
-export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
+export type ApiResponseParser<TResponse> = (payload: unknown) => TResponse;
+
+export interface ApiRequestOptions<TResponse> extends Omit<RequestInit, "body"> {
   body?: unknown;
+  parse?: ApiResponseParser<TResponse>;
 }
 
 export class ApiRequestError extends Error {
@@ -16,18 +19,19 @@ export class ApiRequestError extends Error {
 
 export async function apiRequest<TResponse>(
   path: string,
-  options: ApiRequestOptions = {},
+  options: ApiRequestOptions<TResponse> = {},
 ): Promise<TResponse> {
+  const { body, parse, ...requestInit } = options;
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
 
-  if (options.body !== undefined) {
+  if (body !== undefined) {
     headers.set("Content-Type", "application/json");
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...options,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    ...requestInit,
+    body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "include",
     headers,
   });
@@ -37,11 +41,18 @@ export async function apiRequest<TResponse>(
     throw new ApiRequestError(message, response.status);
   }
 
-  return response.json() as Promise<TResponse>;
+  const payload = (await response.json()) as unknown;
+
+  return parse ? parse(payload) : (payload as TResponse);
 }
 
-export async function apiGet<TResponse>(path: string): Promise<TResponse> {
-  return apiRequest<TResponse>(path);
+export async function apiGet<TResponse>(
+  path: string,
+  parse?: ApiResponseParser<TResponse>,
+): Promise<TResponse> {
+  return apiRequest<TResponse>(path, {
+    parse,
+  });
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
