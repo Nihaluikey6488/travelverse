@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Clock3,
-  Compass,
   ExternalLink,
   Heart,
   IndianRupee,
@@ -18,6 +17,7 @@ import {
   Utensils,
 } from "lucide-react";
 import type { Destination, DestinationSection } from "@travelverse/contracts";
+import { ErrorStatePanel } from "@/components/ui/api-state";
 import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 import { ApiRequestError } from "@/lib/api";
 import { getCurrentUser } from "@/features/auth/components/auth-api";
@@ -45,6 +45,7 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
   const [isFavourite, setIsFavourite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
@@ -57,7 +58,7 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
         setError(requestError instanceof Error ? requestError.message : "Destination not found");
       })
       .finally(() => setIsLoading(false));
-  }, [slug]);
+  }, [slug, retryKey]);
 
   useEffect(() => {
     getCurrentUser()
@@ -124,12 +125,14 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
   if (error || !destination) {
     return (
       <main className="min-h-screen bg-slate-950 px-5 py-10 text-white">
-        <section className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 text-center">
-          <HydrationSafeIcon className="mx-auto h-12 w-12 text-orange-200" icon={Compass} />
-          <h1 className="mt-5 text-3xl font-black">Destination not available</h1>
-          <p className="mt-3 text-slate-300">{error || "This destination is not published yet."}</p>
+        <section className="mx-auto grid max-w-3xl gap-5">
+          <ErrorStatePanel
+            message={error || "This destination is not published yet."}
+            onRetry={() => setRetryKey((current) => current + 1)}
+            title="Destination not available"
+          />
           <Link
-            className="mt-6 inline-flex rounded-full bg-teal-300 px-5 py-3 text-sm font-black text-slate-950"
+            className="mx-auto inline-flex rounded-full bg-teal-300 px-5 py-3 text-sm font-black text-slate-950"
             href="/explore"
           >
             Back to explore

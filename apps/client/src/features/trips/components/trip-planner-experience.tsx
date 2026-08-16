@@ -22,6 +22,7 @@ import type {
   BookingSimulationResponse,
   CreateBookingRequest,
   CreateItineraryRequest,
+  Destination,
   HotelAvailability,
   HotelAvailabilityRoom,
   HotelSearchQuery,
@@ -29,9 +30,10 @@ import type {
   Itinerary,
   ItineraryStop,
 } from "@travelverse/contracts";
-import { sampleDestinations } from "@travelverse/contracts";
+import { EmptyStatePanel, ErrorStatePanel } from "@/components/ui/api-state";
 import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 import { getCurrentUser } from "@/features/auth/components/auth-api";
+import { listDestinations } from "@/features/discovery/components/destination-api";
 import { ApiRequestError } from "@/lib/api";
 import {
   createBooking,
@@ -64,13 +66,11 @@ type SelectedRoomState = {
   room: HotelAvailabilityRoom;
 };
 
-const defaultDestinationSlug = sampleDestinations[0]?.slug ?? "jaipur";
-
 const defaultFormState: PlannerFormState = {
   amenity: "",
   checkIn: "2026-08-20",
   checkOut: "2026-08-23",
-  destinationSlug: defaultDestinationSlug,
+  destinationSlug: "",
   guests: 2,
   minRating: 0,
 };
@@ -80,27 +80,25 @@ const amenityOptions = ["wifi", "breakfast", "pool", "bike rental desk", "local 
 export function TripPlannerExperience() {
   const [bookingHistory, setBookingHistory] = useState<Booking[]>([]);
   const [confirmation, setConfirmation] = useState<BookingSimulationResponse | null>(null);
+  const [destinationError, setDestinationError] = useState("");
+  const [destinationOptions, setDestinationOptions] = useState<Destination[]>([]);
   const [formState, setFormState] = useState<PlannerFormState>(defaultFormState);
   const [hotelResponse, setHotelResponse] = useState<HotelSearchResponse | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
+  const [isDestinationsLoading, setIsDestinationsLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isSavingItinerary, setIsSavingItinerary] = useState(false);
   const [isSearchingHotels, setIsSearchingHotels] = useState(false);
-  const [itineraryDays, setItineraryDays] = useState<EditableDay[]>(() =>
-    createTemplateItinerary(defaultDestinationSlug),
-  );
+  const [itineraryDays, setItineraryDays] = useState<EditableDay[]>([]);
   const [notice, setNotice] = useState("");
   const [savedItineraries, setSavedItineraries] = useState<Itinerary[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<SelectedRoomState | null>(null);
   const [savedItinerary, setSavedItinerary] = useState<Itinerary | null>(null);
 
   const destination = useMemo(() => {
-    return (
-      sampleDestinations.find((candidate) => candidate.slug === formState.destinationSlug) ??
-      sampleDestinations[0]
-    );
-  }, [formState.destinationSlug]);
+    return destinationOptions.find((candidate) => candidate.slug === formState.destinationSlug);
+  }, [destinationOptions, formState.destinationSlug]);
   const itineraryEstimate = useMemo(() => {
     return itineraryDays.reduce((total, day) => {
       return total + day.stops.reduce((dayTotal, stop) => dayTotal + stop.estimatedCostInr, 0);
@@ -110,7 +108,7 @@ export function TripPlannerExperience() {
   const currentTripTotal = selectedStayTotal + itineraryEstimate;
 
   useEffect(() => {
-    void loadHotelAvailability(defaultFormState);
+    void loadDestinationOptions();
     void loadSavedHistory();
   }, []);
 
@@ -125,14 +123,74 @@ export function TripPlannerExperience() {
 
     if (field === "destinationSlug") {
       const destinationSlug = String(value);
-      setItineraryDays(createTemplateItinerary(destinationSlug));
+      const nextDestination = destinationOptions.find(
+        (candidate) => candidate.slug === destinationSlug,
+      );
+      setItineraryDays(createTemplateItinerary(nextDestination));
       setSavedItinerary(null);
       setSelectedRoom(null);
       setConfirmation(null);
     }
   }
 
+  async function loadDestinationOptions() {
+    setIsDestinationsLoading(true);
+    setDestinationError("");
+
+    try {
+      const response = await listDestinations({
+        limit: 50,
+      });
+      const publishedDestinations = response.data;
+      const firstDestination = publishedDestinations[0];
+
+      setDestinationOptions(publishedDestinations);
+
+      if (!firstDestination) {
+        setFormState((current) => ({
+          ...current,
+          destinationSlug: "",
+        }));
+        setHotelResponse(null);
+        setItineraryDays([]);
+        setSelectedRoom(null);
+        setDestinationError("No published destinations found. Publish one from admin first.");
+        return;
+      }
+
+      const selectedSlug = publishedDestinations.some(
+        (candidate) => candidate.slug === formState.destinationSlug,
+      )
+        ? formState.destinationSlug
+        : firstDestination.slug;
+      const selectedDestination =
+        publishedDestinations.find((candidate) => candidate.slug === selectedSlug) ??
+        firstDestination;
+      const nextFormState = {
+        ...formState,
+        destinationSlug: selectedDestination.slug,
+      };
+
+      setFormState(nextFormState);
+      setItineraryDays(createTemplateItinerary(selectedDestination));
+      await loadHotelAvailability(nextFormState);
+    } catch (error: unknown) {
+      setDestinationOptions([]);
+      setHotelResponse(null);
+      setItineraryDays([]);
+      setSelectedRoom(null);
+      setDestinationError(error instanceof Error ? error.message : "Unable to load destinations");
+    } finally {
+      setIsDestinationsLoading(false);
+    }
+  }
+
   async function loadHotelAvailability(nextFormState = formState) {
+    if (!nextFormState.destinationSlug) {
+      setNotice("Please load a published destination before searching stays.");
+      return;
+    }
+
     setIsSearchingHotels(true);
     setNotice("");
 
@@ -196,6 +254,11 @@ export function TripPlannerExperience() {
   }
 
   async function handleSaveItinerary() {
+    if (!formState.destinationSlug || itineraryDays.length === 0) {
+      setNotice("Please select a published destination before saving an itinerary.");
+      return;
+    }
+
     setIsSavingItinerary(true);
     setNotice("");
 
@@ -337,11 +400,15 @@ export function TripPlannerExperience() {
           <form className="grid gap-3 self-end" onSubmit={handleHotelSearch}>
             <div className="grid gap-3 sm:grid-cols-2">
               <SelectField
+                disabled={isDestinationsLoading || destinationOptions.length === 0}
                 label="Destination"
                 onChange={(value) => updateForm("destinationSlug", value)}
                 value={formState.destinationSlug}
               >
-                {sampleDestinations.map((candidate) => (
+                <option value="">
+                  {isDestinationsLoading ? "Loading published destinations" : "Select destination"}
+                </option>
+                {destinationOptions.map((candidate) => (
                   <option key={candidate.slug} value={candidate.slug}>
                     {candidate.name}
                   </option>
@@ -383,7 +450,7 @@ export function TripPlannerExperience() {
 
             <button
               className="inline-flex items-center justify-center gap-3 rounded-[1.45rem] bg-teal-200 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 shadow-2xl shadow-teal-950/30 transition hover:-translate-y-1 hover:bg-white disabled:opacity-60"
-              disabled={isSearchingHotels}
+              disabled={isSearchingHotels || isDestinationsLoading || !formState.destinationSlug}
               type="submit"
             >
               {isSearchingHotels ? (
@@ -407,12 +474,22 @@ export function TripPlannerExperience() {
           </div>
         ) : null}
 
+        {destinationError ? (
+          <ErrorStatePanel
+            message={destinationError}
+            onRetry={loadDestinationOptions}
+            title="Unable to load published destinations"
+          />
+        ) : null}
+
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.72fr)]">
           <div className="grid gap-6">
             <HotelResults
+              hasDestination={Boolean(formState.destinationSlug)}
               hotelResponse={hotelResponse}
               isLoading={isSearchingHotels}
               onSelectRoom={setSelectedRoom}
+              onRetry={() => loadHotelAvailability()}
               selectedRoom={selectedRoom}
             />
             <ItineraryEditor
@@ -450,14 +527,18 @@ export function TripPlannerExperience() {
 }
 
 function HotelResults({
+  hasDestination,
   hotelResponse,
   isLoading,
   onSelectRoom,
+  onRetry,
   selectedRoom,
 }: {
+  hasDestination: boolean;
   hotelResponse: HotelSearchResponse | null;
   isLoading: boolean;
   onSelectRoom: (room: SelectedRoomState) => void;
+  onRetry: () => void;
   selectedRoom: SelectedRoomState | null;
 }) {
   if (isLoading) {
@@ -471,7 +552,27 @@ function HotelResults({
   }
 
   if (!hotelResponse) {
-    return null;
+    return (
+      <EmptyStatePanel
+        action={
+          hasDestination ? (
+            <button
+              className="rounded-full bg-teal-300 px-5 py-3 text-sm font-black text-slate-950"
+              onClick={onRetry}
+              type="button"
+            >
+              Load stays
+            </button>
+          ) : null
+        }
+        message={
+          hasDestination
+            ? "Search latest simulated hotel availability for the selected published destination."
+            : "Published destination data is required before hotel availability can be checked."
+        }
+        title="Hotel availability will appear here"
+      />
+    );
   }
 
   return (
@@ -660,7 +761,7 @@ function ItineraryEditor({
 
       <button
         className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-white disabled:opacity-60"
-        disabled={isSaving}
+        disabled={isSaving || days.length === 0}
         onClick={onSave}
         type="button"
       >
@@ -797,11 +898,13 @@ function SavedTripsPanel({
 
 function SelectField({
   children,
+  disabled = false,
   label,
   onChange,
   value,
 }: {
   children: React.ReactNode;
+  disabled?: boolean;
   label: string;
   onChange: (value: string) => void;
   value: string;
@@ -810,7 +913,8 @@ function SelectField({
     <label className="grid gap-2 rounded-[1.4rem] border border-white/10 bg-slate-950/60 px-4 py-3">
       <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{label}</span>
       <select
-        className="bg-transparent text-sm font-bold text-white outline-none"
+        className="bg-transparent text-sm font-bold text-white outline-none disabled:opacity-60"
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         value={value}
       >
@@ -894,10 +998,7 @@ function HistoryBlock({ count, label }: { count: number; label: string }) {
   );
 }
 
-function createTemplateItinerary(destinationSlug: string): EditableDay[] {
-  const destination =
-    sampleDestinations.find((candidate) => candidate.slug === destinationSlug) ??
-    sampleDestinations[0];
+function createTemplateItinerary(destination?: Destination): EditableDay[] {
   const attractions = destination?.attractions ?? [];
 
   return [

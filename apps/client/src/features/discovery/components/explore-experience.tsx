@@ -21,6 +21,7 @@ import type {
   DestinationListResponse,
 } from "@travelverse/contracts";
 import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
+import { ErrorStatePanel } from "@/components/ui/api-state";
 import { ApiRequestError } from "@/lib/api";
 import { getCurrentUser } from "@/features/auth/components/auth-api";
 import {
@@ -49,9 +50,11 @@ export function ExploreExperience() {
   const [favouriteSlugs, setFavouriteSlugs] = useState<Set<string>>(() => new Set());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [region, setRegion] = useState("");
 
   const activeFilters = useMemo(
@@ -81,6 +84,7 @@ export function ExploreExperience() {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setIsLoading(true);
+      setLoadError("");
       listDestinations({
         activity: activity || undefined,
         category: category || undefined,
@@ -95,13 +99,13 @@ export function ExploreExperience() {
         })
         .catch((error: unknown) => {
           setDestinationList(null);
-          setNotice(error instanceof Error ? error.message : "Unable to load destinations");
+          setLoadError(error instanceof Error ? error.message : "Unable to load destinations");
         })
         .finally(() => setIsLoading(false));
     }, 240);
 
     return () => window.clearTimeout(timeoutId);
-  }, [activity, category, page, query, region]);
+  }, [activity, category, page, query, region, reloadKey]);
 
   function resetFilters() {
     setActivity("");
@@ -109,6 +113,15 @@ export function ExploreExperience() {
     setPage(1);
     setQuery("");
     setRegion("");
+  }
+
+  function retryDestinationSearch() {
+    setReloadKey((current) => current + 1);
+  }
+
+  function updateFilter(setter: (value: string) => void, value: string) {
+    setter(value);
+    setPage(1);
   }
 
   async function toggleFavourite(destinationSlug: string) {
@@ -222,19 +235,19 @@ export function ExploreExperience() {
             <div className="grid gap-3 sm:grid-cols-3">
               <FilterSelect
                 label="Region"
-                onChange={setRegion}
+                onChange={(value) => updateFilter(setRegion, value)}
                 options={facets.regions}
                 value={region}
               />
               <FilterSelect
                 label="Category"
-                onChange={setCategory}
+                onChange={(value) => updateFilter(setCategory, value)}
                 options={facets.categories}
                 value={category}
               />
               <FilterSelect
                 label="Activity"
-                onChange={setActivity}
+                onChange={(value) => updateFilter(setActivity, value)}
                 options={facets.activities}
                 value={activity}
               />
@@ -278,7 +291,9 @@ export function ExploreExperience() {
               <h2 className="mt-2 text-3xl font-black tracking-[-0.05em]">
                 {meta
                   ? `${meta.total} destination${meta.total === 1 ? "" : "s"} found`
-                  : "Loading destinations"}
+                  : loadError
+                    ? "Destination search needs retry"
+                    : "Loading destinations"}
               </h2>
             </div>
             {meta ? (
@@ -296,7 +311,15 @@ export function ExploreExperience() {
             </div>
           ) : null}
 
-          {!isLoading && destinations.length > 0 ? (
+          {!isLoading && loadError ? (
+            <ErrorStatePanel
+              message={loadError}
+              onRetry={retryDestinationSearch}
+              title="Unable to load published atlas"
+            />
+          ) : null}
+
+          {!isLoading && !loadError && destinations.length > 0 ? (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {destinations.map((destination) => (
                 <DestinationExploreCard
@@ -309,7 +332,7 @@ export function ExploreExperience() {
             </div>
           ) : null}
 
-          {!isLoading && destinations.length === 0 ? (
+          {!isLoading && !loadError && destinations.length === 0 ? (
             <div className="rounded-[2.2rem] border border-white/10 bg-white/[0.06] p-10 text-center shadow-2xl shadow-black/25">
               <HydrationSafeIcon className="mx-auto h-10 w-10 text-teal-200" icon={Compass} />
               <h3 className="mt-4 text-2xl font-black">No published destination found</h3>
