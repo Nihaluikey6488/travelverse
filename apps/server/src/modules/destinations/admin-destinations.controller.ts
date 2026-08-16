@@ -3,8 +3,10 @@ import {
   destinationImportRequestSchema,
   destinationImportSearchQuerySchema,
   destinationListQuerySchema,
+  slugSchema,
   updateDestinationRequestSchema,
   upsertDestinationRequestSchema,
+  type AuthUser,
   type Destination,
   type DestinationImportPreview,
   type DestinationImportRequest,
@@ -17,6 +19,8 @@ import {
   type UpsertDestinationRequest,
 } from "@travelverse/contracts";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
+import { AuditLogService } from "../audit/audit-log.service";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -28,6 +32,7 @@ import { DestinationImportService } from "./import/destination-import.service";
 @Roles("ADMIN")
 export class AdminDestinationsController {
   constructor(
+    private readonly auditLogService: AuditLogService,
     private readonly destinationsService: DestinationsService,
     private readonly destinationImportService: DestinationImportService,
   ) {}
@@ -40,10 +45,21 @@ export class AdminDestinationsController {
   }
 
   @Post()
-  create(
+  async create(
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(upsertDestinationRequestSchema)) payload: UpsertDestinationRequest,
   ): Promise<Destination> {
-    return this.destinationsService.create(payload);
+    const destination = await this.destinationsService.create(payload);
+    await this.auditLogService.recordDestinationAction({
+      action: "DESTINATION_CREATED",
+      actor: user,
+      destination,
+      metadata: {
+        status: destination.status,
+      },
+    });
+
+    return destination;
   }
 
   @Get("import/search")
@@ -62,32 +78,76 @@ export class AdminDestinationsController {
   }
 
   @Post("import")
-  importDraft(
+  async importDraft(
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(destinationImportRequestSchema)) payload: DestinationImportRequest,
   ): Promise<DestinationImportResult> {
-    return this.destinationImportService.importDraft(payload);
+    const importResult = await this.destinationImportService.importDraft(payload);
+    await this.auditLogService.recordDestinationAction({
+      action: "DESTINATION_IMPORTED",
+      actor: user,
+      destination: importResult.destination,
+      metadata: {
+        importedFields: importResult.importedFields,
+        provider: importResult.candidate.provider,
+        sourceCount: importResult.sources.length,
+      },
+    });
+
+    return importResult;
   }
 
   @Get(":slug")
-  findBySlug(@Param("slug") slug: string): Promise<Destination> {
+  findBySlug(@Param("slug", new ZodValidationPipe(slugSchema)) slug: string): Promise<Destination> {
     return this.destinationsService.findBySlugForAdmin(slug);
   }
 
   @Patch(":slug")
-  update(
-    @Param("slug") slug: string,
+  async update(
+    @CurrentUser() user: AuthUser,
+    @Param("slug", new ZodValidationPipe(slugSchema)) slug: string,
     @Body(new ZodValidationPipe(updateDestinationRequestSchema)) payload: UpdateDestinationRequest,
   ): Promise<Destination> {
-    return this.destinationsService.update(slug, payload);
+    const destination = await this.destinationsService.update(slug, payload);
+    await this.auditLogService.recordDestinationAction({
+      action: "DESTINATION_UPDATED",
+      actor: user,
+      destination,
+      metadata: {
+        updatedFields: Object.keys(payload),
+      },
+    });
+
+    return destination;
   }
 
   @Post(":slug/publish")
-  publish(@Param("slug") slug: string): Promise<Destination> {
-    return this.destinationsService.publish(slug);
+  async publish(
+    @CurrentUser() user: AuthUser,
+    @Param("slug", new ZodValidationPipe(slugSchema)) slug: string,
+  ): Promise<Destination> {
+    const destination = await this.destinationsService.publish(slug);
+    await this.auditLogService.recordDestinationAction({
+      action: "DESTINATION_PUBLISHED",
+      actor: user,
+      destination,
+    });
+
+    return destination;
   }
 
   @Post(":slug/archive")
-  archive(@Param("slug") slug: string): Promise<Destination> {
-    return this.destinationsService.archive(slug);
+  async archive(
+    @CurrentUser() user: AuthUser,
+    @Param("slug", new ZodValidationPipe(slugSchema)) slug: string,
+  ): Promise<Destination> {
+    const destination = await this.destinationsService.archive(slug);
+    await this.auditLogService.recordDestinationAction({
+      action: "DESTINATION_ARCHIVED",
+      actor: user,
+      destination,
+    });
+
+    return destination;
   }
 }

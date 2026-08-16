@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { AuditModule } from "../audit/audit.module";
 import { AuthModule } from "../auth/auth.module";
 import { AdminDestinationsController } from "./admin-destinations.controller";
 import { DestinationsController } from "./destinations.controller";
@@ -14,6 +15,7 @@ import { DestinationDocument, DestinationSchema } from "./schemas/destination.sc
 @Module({
   imports: [
     AuthModule,
+    AuditModule,
     MongooseModule.forFeature([
       {
         name: DestinationDocument.name,

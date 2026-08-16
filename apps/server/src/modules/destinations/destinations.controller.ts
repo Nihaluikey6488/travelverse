@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from "@nestjs/common";
 import {
   type DestinationFacetResponse,
   destinationListQuerySchema,
+  slugSchema,
   type Destination,
   type DestinationListQuery,
   type DestinationListResponse,
@@ -26,7 +27,7 @@ export class DestinationsController {
   }
 
   @Get(":slug")
-  findBySlug(@Param("slug") slug: string): Promise<Destination> {
+  findBySlug(@Param("slug", new ZodValidationPipe(slugSchema)) slug: string): Promise<Destination> {
     return this.destinationsService.findBySlug(slug);
   }
 }
