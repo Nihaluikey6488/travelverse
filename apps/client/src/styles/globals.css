@@ -38,8 +38,33 @@ a {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(94, 234, 212, 0.95);
+  outline-offset: 4px;
+}
+
+.skip-link {
+  background: #5eead4;
+  border-radius: 999px;
+  color: #020617;
+  font-weight: 900;
+  left: 16px;
+  padding: 12px 18px;
+  position: fixed;
+  top: 12px;
+  transform: translateY(-180%);
+  transition: transform 180ms ease;
+  z-index: 100;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }
 
 .award-grain::after {
@@ -252,6 +277,12 @@ input {
   border-color: var(--green);
 }
 
+.destination-card:focus-visible,
+.action-row button:focus-visible,
+.top-nav a:focus-visible {
+  border-color: var(--green);
+}
+
 .destination-card span {
   align-items: center;
   display: flex;
@@ -285,5 +316,20 @@ input {
 
   .destination-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .award-grain::after {
+    opacity: 0.08;
   }
 }

@@ -204,6 +204,7 @@ export function RoutePlanner({ attractions, destination, destinationName }: Rout
           </p>
         </div>
         <button
+          aria-describedby="route-geolocation-status"
           className="inline-flex items-center gap-2 rounded-full bg-teal-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-white"
           onClick={requestLocation}
           type="button"
@@ -223,6 +224,7 @@ export function RoutePlanner({ attractions, destination, destinationName }: Rout
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {originPresets.map((preset) => (
                 <button
+                  aria-pressed={originLabel === preset.label}
                   className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold transition ${
                     originLabel === preset.label
                       ? "border-teal-200/70 bg-teal-200/10 text-teal-50"
@@ -270,6 +272,7 @@ export function RoutePlanner({ attractions, destination, destinationName }: Rout
             <div className="mt-4 grid grid-cols-3 gap-2">
               {travelModes.map(({ icon, label, value }) => (
                 <button
+                  aria-pressed={mode === value}
                   className={`inline-flex flex-col items-center gap-2 rounded-2xl border px-3 py-3 text-xs font-black uppercase tracking-[0.12em] transition ${
                     mode === value
                       ? "border-amber-200/80 bg-amber-200/15 text-amber-50"
@@ -286,7 +289,11 @@ export function RoutePlanner({ attractions, destination, destinationName }: Rout
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-slate-950/45 p-4 text-sm leading-7 text-slate-300">
+          <div
+            aria-live="polite"
+            className="rounded-3xl border border-white/10 bg-slate-950/45 p-4 text-sm leading-7 text-slate-300"
+            id="route-geolocation-status"
+          >
             <p className="flex items-center gap-2 font-bold text-teal-100">
               <HydrationSafeIcon className="h-4 w-4" icon={MapPinned} />
               {geolocationMessage}
