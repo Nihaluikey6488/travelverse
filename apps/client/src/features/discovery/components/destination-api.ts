@@ -8,33 +8,51 @@ import type {
   RouteEstimateRequest,
   RouteEstimateResponse,
 } from "@travelverse/contracts";
+import {
+  destinationFacetResponseSchema,
+  destinationListResponseSchema,
+  destinationSchema,
+  favouriteListResponseSchema,
+  favouriteMutationResponseSchema,
+  routeEstimateResponseSchema,
+} from "@travelverse/contracts";
 import { apiGet, apiRequest } from "@/lib/api";
 
 export function listDestinations(query: Partial<DestinationListQuery> = {}) {
-  return apiGet<DestinationListResponse>(`/destinations${toQueryString(query)}`);
+  return apiGet<DestinationListResponse>(`/destinations${toQueryString(query)}`, (response) =>
+    destinationListResponseSchema.parse(response),
+  );
 }
 
 export function getDestination(slug: string) {
-  return apiGet<Destination>(`/destinations/${slug}`);
+  return apiGet<Destination>(`/destinations/${slug}`, (response) =>
+    destinationSchema.parse(response),
+  );
 }
 
 export function getDestinationFacets() {
-  return apiGet<DestinationFacetResponse>("/destinations/facets");
+  return apiGet<DestinationFacetResponse>("/destinations/facets", (response) =>
+    destinationFacetResponseSchema.parse(response),
+  );
 }
 
 export function listFavourites() {
-  return apiGet<FavouriteListResponse>("/favourites");
+  return apiGet<FavouriteListResponse>("/favourites", (response) =>
+    favouriteListResponseSchema.parse(response),
+  );
 }
 
 export function addFavourite(destinationSlug: string) {
   return apiRequest<FavouriteMutationResponse>(`/favourites/${destinationSlug}`, {
     method: "POST",
+    parse: (response) => favouriteMutationResponseSchema.parse(response),
   });
 }
 
 export function removeFavourite(destinationSlug: string) {
   return apiRequest<FavouriteMutationResponse>(`/favourites/${destinationSlug}`, {
     method: "DELETE",
+    parse: (response) => favouriteMutationResponseSchema.parse(response),
   });
 }
 
@@ -42,6 +60,7 @@ export function estimateRoute(payload: RouteEstimateRequest) {
   return apiRequest<RouteEstimateResponse>("/routes/estimate", {
     body: payload,
     method: "POST",
+    parse: (response) => routeEstimateResponseSchema.parse(response),
   });
 }
 

@@ -4,6 +4,8 @@ import type {
   FavouriteListResponse,
   FavouriteMutationResponse,
 } from "@travelverse/contracts";
+import { slugSchema } from "@travelverse/contracts";
+import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { FavouritesService } from "./favourites.service";
@@ -21,7 +23,7 @@ export class FavouritesController {
   @Post(":slug")
   add(
     @CurrentUser() user: AuthUser,
-    @Param("slug") destinationSlug: string,
+    @Param("slug", new ZodValidationPipe(slugSchema)) destinationSlug: string,
   ): Promise<FavouriteMutationResponse> {
     return this.favouritesService.add(user.id, destinationSlug);
   }
@@ -29,7 +31,7 @@ export class FavouritesController {
   @Delete(":slug")
   remove(
     @CurrentUser() user: AuthUser,
-    @Param("slug") destinationSlug: string,
+    @Param("slug", new ZodValidationPipe(slugSchema)) destinationSlug: string,
   ): Promise<FavouriteMutationResponse> {
     return this.favouritesService.remove(user.id, destinationSlug);
   }
