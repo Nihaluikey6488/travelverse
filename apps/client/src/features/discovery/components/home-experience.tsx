@@ -22,10 +22,10 @@ const TravelGlobe = dynamic<TravelGlobeProps>(
 );
 
 const featurePills = [
-  { icon: Compass, label: "Explore story" },
-  { icon: Route, label: "Route map" },
-  { icon: Plane, label: "Cost compare" },
-  { icon: Hotel, label: "Stay planner" },
+  { href: "/explore", icon: Compass, label: "Explore story" },
+  { href: "/destinations/jaipur", icon: Route, label: "Route map" },
+  { href: "/transport", icon: Plane, label: "Cost compare" },
+  { href: "/trip-planner", icon: Hotel, label: "Stay planner" },
 ];
 
 export function HomeExperience() {
@@ -180,18 +180,18 @@ export function HomeExperience() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              {featurePills.map(({ icon: Icon, label }) => (
-                <button
+              {featurePills.map(({ href, icon: Icon, label }) => (
+                <Link
                   className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-4 py-3 text-sm font-bold text-slate-200 backdrop-blur-xl transition hover:-translate-y-1 hover:border-teal-200/50 hover:bg-teal-200/10 hover:text-white"
+                  href={href}
                   key={label}
-                  type="button"
                 >
                   <HydrationSafeIcon
                     className="h-4 w-4 text-amber-200 transition group-hover:text-teal-200"
                     icon={Icon}
                   />
                   {label}
-                </button>
+                </Link>
               ))}
             </div>
 
@@ -204,6 +204,7 @@ export function HomeExperience() {
                     : "cursor-not-allowed border border-white/10 bg-white/[0.06] text-slate-400",
                 ].join(" ")}
                 disabled={!canUseThreeScene}
+                aria-pressed={isThreeSceneEnabled}
                 onClick={() => setIsThreeSceneEnabled((currentValue) => !currentValue)}
                 type="button"
               >
