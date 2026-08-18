@@ -16,10 +16,11 @@ import {
   Sparkles,
   Utensils,
 } from "lucide-react";
-import type { Destination, DestinationSection } from "@travelverse/contracts";
+import type { Destination, DestinationSection, SourceAttribution } from "@travelverse/contracts";
 import { ErrorStatePanel } from "@/components/ui/api-state";
 import { HydrationSafeIcon } from "@/components/ui/hydration-safe-icon";
 import { ApiRequestError } from "@/lib/api";
+import { resolveSourceLink } from "@/lib/source-attribution";
 import { getCurrentUser } from "@/features/auth/components/auth-api";
 import {
   addFavourite,
@@ -249,10 +250,16 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
             <Panel title="Source trust">
               <div className="grid gap-3">
                 {destination.sources.map((source) => (
-                  <a
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300 transition hover:border-teal-200/40 hover:text-white"
-                    href={source.sourceUrl}
+                  <SourceTrustCard
                     key={`${source.provider}-${source.sourceUrl}`}
+                    source={source}
+                  />
+                ))}
+                {destination.sources.map((source) => (
+                  <a
+                    className="hidden"
+                    href={source.sourceUrl}
+                    key={`legacy-${source.provider}-${source.sourceUrl}`}
                     rel="noreferrer"
                     target="_blank"
                   >
@@ -366,6 +373,38 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
         </section>
       </section>
     </main>
+  );
+}
+
+function SourceTrustCard({ source }: { source: SourceAttribution }) {
+  const link = resolveSourceLink(source.sourceUrl);
+  const className =
+    "rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-slate-300 transition hover:border-teal-200/40 hover:text-white";
+  const content = (
+    <>
+      <span className="flex items-center gap-2 font-bold text-teal-100">
+        <HydrationSafeIcon className="h-4 w-4" icon={ShieldCheck} />
+        {source.provider} · {source.verificationStatus}
+      </span>
+      <span className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+        {link.isExternal ? "Open external source" : "Open TravelVerse source note"}
+        <HydrationSafeIcon className="h-3.5 w-3.5" icon={ExternalLink} />
+      </span>
+    </>
+  );
+
+  if (!link.isExternal) {
+    return (
+      <Link className={className} href={link.href}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <a className={className} href={link.href} rel="noreferrer" target="_blank">
+      {content}
+    </a>
   );
 }
 
