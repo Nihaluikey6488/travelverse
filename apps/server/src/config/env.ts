@@ -38,6 +38,7 @@ const envSchema = z.object({
     .min(10)
     .default("TravelVerse3D/0.1 (local demo; admin@travelverse.local)"),
   JWT_SECRET: z.string().min(16).default("dev-travelverse-secret-change-before-production"),
+  LOG_FORMAT: z.enum(["pretty", "json"]).default("pretty"),
   MONGODB_DB_NAME: z.string().min(1).default("travelverse"),
   MONGODB_URI: z
     .string()
@@ -49,8 +50,14 @@ const envSchema = z.object({
   OAUTH_SUCCESS_REDIRECT_URL: z.string().url().default("http://localhost:3000/account"),
   OSRM_BASE_URL: z.string().url().default("https://router.project-osrm.org"),
   PORT: z.coerce.number().int().positive().default(4000),
+  PROVIDER_DAILY_REQUEST_LIMIT: z.coerce.number().int().nonnegative().default(500),
+  PROVIDER_MONTHLY_BUDGET_INR: z.coerce.number().int().nonnegative().default(0),
+  RELEASE_SHA: z.string().min(1).default("local"),
   ROUTING_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   ROUTING_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(7000),
+  SENTRY_DSN: z.union([z.string().url(), z.literal("")]).default(""),
+  SERVICE_VERSION: z.string().min(1).default("0.1.0"),
+  TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
   WIKIPEDIA_API_BASE_URL: z.string().url().default("https://en.wikipedia.org"),
 });
 
