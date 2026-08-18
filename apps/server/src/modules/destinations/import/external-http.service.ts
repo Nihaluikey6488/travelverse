@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { consumeProviderRequest } from "../../../common/provider-budget";
 import { env } from "../../../config/env";
 
 @Injectable()
@@ -8,6 +9,8 @@ export class ExternalHttpService {
     const timeout = setTimeout(() => controller.abort(), env.INGESTION_FETCH_TIMEOUT_MS);
 
     try {
+      consumeProviderRequest(url.hostname);
+
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",

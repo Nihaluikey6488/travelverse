@@ -245,3 +245,25 @@ ROUTING_CACHE_TTL_SECONDS=900
 Provider docs used:
 
 - OSRM Route service: https://project-osrm.org/docs/v5.24.0/api/
+
+## Day 13 Production Readiness
+
+Operational docs and guardrails now live in:
+
+- `docs/deployment/PRODUCTION_RUNBOOK.md`
+- `docs/api/ENDPOINTS.md`
+- `docs/data-sources/README.md`
+- `.env.production.example`
+
+Production-facing endpoints:
+
+- Liveness: `GET /api/health`
+- Readiness: `GET /api/health/readiness`
+
+Production guardrails added:
+
+- JSON request logs through `LOG_FORMAT=json`
+- release metadata through `SERVICE_VERSION` and `RELEASE_SHA`
+- provider call guardrails through `PROVIDER_DAILY_REQUEST_LIMIT`
+- optional error-monitoring config through `SENTRY_DSN`
+- internal source explainer pages such as `/sources/manual-demo` and `/sources/admin-curated`

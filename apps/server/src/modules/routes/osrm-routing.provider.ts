@@ -5,6 +5,7 @@ import type {
   RouteEstimateResponse,
   RouteTravelMode,
 } from "@travelverse/contracts";
+import { consumeProviderRequest } from "../../common/provider-budget";
 import { env } from "../../config/env";
 import type { RoutingProvider } from "./routing-provider.interface";
 
@@ -35,6 +36,8 @@ export class OsrmRoutingProvider implements RoutingProvider {
     const timeout = setTimeout(() => controller.abort(), env.ROUTING_FETCH_TIMEOUT_MS);
 
     try {
+      consumeProviderRequest(url.hostname);
+
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",

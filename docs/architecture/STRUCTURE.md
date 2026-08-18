@@ -30,6 +30,7 @@ finalProject/
 |-- docs/
 |   |-- architecture/
 |   |-- api/
+|   |-- deployment/
 |   `-- data-sources/
 `-- scripts/
 ```

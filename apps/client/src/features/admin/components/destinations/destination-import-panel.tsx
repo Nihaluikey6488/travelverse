@@ -1,13 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, DatabaseZap, ExternalLink, Loader2, Search, Sparkles } from "lucide-react";
 import type {
   DestinationImportCandidate,
   DestinationImportPreview,
   DestinationImportResult,
   DestinationImportSearchResponse,
+  SourceAttribution,
 } from "@travelverse/contracts";
+import { resolveSourceLink } from "@/lib/source-attribution";
 import {
   importDestinationDraft,
   previewDestinationImport,
@@ -215,10 +218,16 @@ export function DestinationImportPanel({ onImported }: DestinationImportPanelPro
                   Source attribution
                 </p>
                 {preview.sources.map((source) => (
-                  <a
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 hover:border-teal-200/40"
-                    href={source.sourceUrl}
+                  <ImportSourceLink
                     key={`${source.provider}-${source.sourceUrl}`}
+                    source={source}
+                  />
+                ))}
+                {preview.sources.map((source) => (
+                  <a
+                    className="hidden"
+                    href={source.sourceUrl}
+                    key={`legacy-${source.provider}-${source.sourceUrl}`}
                     rel="noreferrer"
                     target="_blank"
                   >
@@ -259,6 +268,34 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{label}</p>
       <p className="mt-2 break-words text-sm font-semibold text-slate-200">{value}</p>
     </div>
+  );
+}
+
+function ImportSourceLink({ source }: { source: SourceAttribution }) {
+  const link = resolveSourceLink(source.sourceUrl);
+  const className =
+    "flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 hover:border-teal-200/40";
+  const content = (
+    <>
+      <span>
+        {source.provider} • {source.license}
+      </span>
+      <ExternalLink className="h-4 w-4 shrink-0" />
+    </>
+  );
+
+  if (!link.isExternal) {
+    return (
+      <Link className={className} href={link.href}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <a className={className} href={link.href} rel="noreferrer" target="_blank">
+      {content}
+    </a>
   );
 }
 
