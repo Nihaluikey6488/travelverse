@@ -34,6 +34,8 @@ Important client value:
 
 Never expose server-only secrets to the client deployment.
 
+The API intentionally refuses to start in `NODE_ENV=production` when it detects unsafe development defaults such as localhost URLs, the default admin credentials, the local MongoDB URI or the development JWT secret.
+
 ## 3. Build and release validation
 
 Run these before deploying a release:
