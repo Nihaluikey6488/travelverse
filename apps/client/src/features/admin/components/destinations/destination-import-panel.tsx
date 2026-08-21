@@ -223,20 +223,6 @@ export function DestinationImportPanel({ onImported }: DestinationImportPanelPro
                     source={source}
                   />
                 ))}
-                {preview.sources.map((source) => (
-                  <a
-                    className="hidden"
-                    href={source.sourceUrl}
-                    key={`legacy-${source.provider}-${source.sourceUrl}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span>
-                      {source.provider} • {source.license}
-                    </span>
-                    <ExternalLink className="h-4 w-4 shrink-0" />
-                  </a>
-                ))}
               </div>
 
               <button

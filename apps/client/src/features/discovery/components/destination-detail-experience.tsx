@@ -255,24 +255,6 @@ export function DestinationDetailExperience({ slug }: { slug: string }) {
                     source={source}
                   />
                 ))}
-                {destination.sources.map((source) => (
-                  <a
-                    className="hidden"
-                    href={source.sourceUrl}
-                    key={`legacy-${source.provider}-${source.sourceUrl}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <span className="flex items-center gap-2 font-bold text-teal-100">
-                      <HydrationSafeIcon className="h-4 w-4" icon={ShieldCheck} />
-                      {source.provider} · {source.verificationStatus}
-                    </span>
-                    <span className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                      Open source
-                      <HydrationSafeIcon className="h-3.5 w-3.5" icon={ExternalLink} />
-                    </span>
-                  </a>
-                ))}
               </div>
             </Panel>
           </aside>
